@@ -13,7 +13,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.client.*;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
@@ -40,7 +43,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuth2AuthorizedClientManager authorizedClientManager() {
-        OAuth2AuthorizedClientService clientService =
+        InMemoryOAuth2AuthorizedClientService clientService =
                 new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
         OAuth2AuthorizedClientRepository clientRepository =
                 new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(clientService);
@@ -73,7 +76,8 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterAfter(new JwtFilter(jwtUtil), OAuth2LoginAuthenticationFilter.class) // 필터 순서 보장
+                // JWT 필터 추가 (OAuth2 로그인 인증 후에 동작하도록 설정)
+                .addFilterAfter(new JwtFilter(jwtUtil), OAuth2LoginAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(endpoint -> endpoint
                                 .userService(customOAuth2UserService))
@@ -81,7 +85,8 @@ public class SecurityConfig {
                         .failureHandler(customFailHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/oauth2/**").permitAll()
+                        // 기본 페이지, OAuth2 관련, refresh token 엔드포인트는 인증 없이 접근 허용
+                        .requestMatchers("/", "/oauth2/**", "/auth/refresh").permitAll()
                         .anyRequest().authenticated()
                 );
 

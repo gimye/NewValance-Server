@@ -30,6 +30,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return switch (provider) {
                 case "kakao" -> processKakaoUser(oAuth2User);
                 case "naver" -> processNaverUser(oAuth2User);
+                case "google" -> processGoogleUser(oAuth2User); // 구글 분기 추가
                 default -> throw createOAuthException("unsupported_provider", "지원하지 않는 공급자: " + provider);
             };
         } catch (OAuth2AuthenticationException ex) {
@@ -39,10 +40,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
+    private OAuth2User processGoogleUser(OAuth2User oAuth2User) {
+        GoogleMemberInfoResponse response = new GoogleMemberInfoResponse(oAuth2User.getAttributes());
+        validateEmail(response.getEmail(), "Google");
+        // LoginProvider enum에 google 값이 있어야 함
+        checkExistingEmail(response.getEmail(), LoginProvider.google);
+
+        User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.google)
+                .map(existingUser -> updateExistingUser(existingUser, response))
+                .orElseGet(() -> createNewUser(response, LoginProvider.google));
+
+        // 구글의 경우 user info 응답에서 사용자 식별자는 "sub" 필드로 제공됨
+        return new CustomOAuth2User(user, oAuth2User.getAttributes(), "sub");
+    }
+
+
     private OAuth2User processKakaoUser(OAuth2User oAuth2User) {
         KakaoMemberInfoResponse response = new KakaoMemberInfoResponse(oAuth2User.getAttributes());
         validateEmail(response.getEmail(), "Kakao");
-        checkExistingEmail(response.getEmail()); // 🔥 이메일 중복 체크
+        // 로그인 공급자를 함께 확인하여, 동일 공급자인 경우에만 업데이트를 진행
+        checkExistingEmail(response.getEmail(), LoginProvider.kakao);
 
         User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.kakao)
                 .map(existingUser -> updateExistingUser(existingUser, response))
@@ -55,7 +72,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> responseMap = (Map<String, Object>) oAuth2User.getAttributes().get("response");
         NaverMemberInfoResponse response = new NaverMemberInfoResponse(responseMap);
         validateEmail(response.getEmail(), "Naver");
-        checkExistingEmail(response.getEmail()); // 🔥 이메일 중복 체크
+        // 로그인 공급자를 함께 확인하여, 동일 공급자인 경우에만 업데이트를 진행
+        checkExistingEmail(response.getEmail(), LoginProvider.naver);
 
         User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.naver)
                 .map(existingUser -> updateExistingUser(existingUser, response))
@@ -64,14 +82,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return new CustomOAuth2User(user, responseMap, "id");
     }
 
-    // 🔥 이메일 중복 검증 메서드
-    private void checkExistingEmail(String email) {
-        if (userRepository.existsByEmail(email)) {
-            throw createOAuthException(
-                    "duplicate_email",
-                    "이미 회원가입한 계정이 있습니다. 다른 방식으로 로그인해주세요."
-            );
-        }
+    // 이메일 중복 확인 시, 로그인 공급자까지 고려하도록 수정
+    private void checkExistingEmail(String email, LoginProvider provider) {
+        userRepository.findByEmail(email).ifPresent(existingUser -> {
+            if (!existingUser.getLoginProvider().equals(provider)) {
+                throw createOAuthException(
+                        "duplicate_email",
+                        "이미 가입된 이메일이 있습니다. 기존 로그인 방식을 사용해주세요."
+                );
+            }
+        });
     }
 
     private void validateEmail(String email, String provider) {
@@ -97,7 +117,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return userRepository.save(newUser);
     }
 
-    // 🔥 예외 생성 유틸리티 메서드
+    // 예외 생성 유틸리티 메서드
     private OAuth2AuthenticationException createOAuthException(String errorCode, String message) {
         OAuth2Error error = new OAuth2Error(
                 errorCode,

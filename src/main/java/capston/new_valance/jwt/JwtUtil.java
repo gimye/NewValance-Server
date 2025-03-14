@@ -49,6 +49,14 @@ public class JwtUtil {
                 .compact();
     }
 
+    public String generateRefreshToken(User user) {
+        return Jwts.builder()
+                .claim("userId", user.getUserId())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 604800000)) // 7일
+                .signWith(secretKey)
+                .compact();
+    }
 
 
     // 토큰 유효성 검사

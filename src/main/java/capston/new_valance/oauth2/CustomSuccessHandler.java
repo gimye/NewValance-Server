@@ -25,10 +25,18 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException {
         CustomOAuth2User customOAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         User user = customOAuth2User.getUser();
-        String token = jwtUtil.generateToken(user);
+
+        // 토큰 생성
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = jwtUtil.generateRefreshToken(user);  // 새로 추가
 
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"token\":\"" + token + "\"}");
+        response.getWriter().write("{"
+                + "\"access_token\":\"" + accessToken + "\","
+                + "\"refresh_token\":\"" + refreshToken + "\","
+                + "\"message\":\"로그인 성공\""
+                + "}");
         response.getWriter().flush();
     }
 }
+
