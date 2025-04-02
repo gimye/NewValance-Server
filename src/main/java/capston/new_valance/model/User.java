@@ -1,5 +1,6 @@
 package capston.new_valance.model;
 
+import capston.new_valance.oauth2.OAuth2Response;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,15 +9,14 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Setter
+@Builder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-// User.java
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
         name = "users",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_email_provider",
-                columnNames = {"email", "login_provider"}  // 복합 유니크 키
+                columnNames = {"email", "login_provider"}
         )
 )
 public class User {
@@ -28,7 +28,7 @@ public class User {
     @Column
     private String username;
 
-    @Column(nullable = false) // 🔥 이메일 필드 NOT NULL
+    @Column(nullable = false)
     private String email;
 
     @Column(name = "profile_picture_url")
@@ -46,10 +46,14 @@ public class User {
     @Column(nullable = false, name = "login_provider")
     private LoginProvider loginProvider;
 
-    public static User createSocialUser(String email, LoginProvider provider) {
-        User user = new User();
-        user.setEmail(email);
-        user.setLoginProvider(provider);
-        return user;
+
+
+    // 빌더 생성 메서드 (필수 필드 강제)
+    public static User.UserBuilder builder(String email, LoginProvider loginProvider) {
+        return new User.UserBuilder()
+                .email(email)
+                .loginProvider(loginProvider);
     }
+
+    // 기존 static factory method 제거 → 빌더 패턴으로 대체
 }

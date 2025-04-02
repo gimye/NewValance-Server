@@ -27,6 +27,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -35,7 +36,6 @@ public class SecurityConfig {
 
     @Lazy
     private final CustomOAuth2UserService customOAuth2UserService;
-
     private final JwtUtil jwtUtil;
     private final CustomSuccessHandler customSuccessHandler;
     private final CustomFailHandler customFailHandler;
@@ -72,26 +72,23 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfig()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 페이지 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // JWT 필터 추가 (OAuth2 로그인 인증 후에 동작하도록 설정)
-                .addFilterAfter(new JwtFilter(jwtUtil), OAuth2LoginAuthenticationFilter.class)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(endpoint -> endpoint
-                                .userService(customOAuth2UserService))
+                        .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
                         .successHandler(customSuccessHandler)
                         .failureHandler(customFailHandler)
+                        .loginPage("/custom-login") // 사용자 정의 로그인 페이지 설정
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // 기본 페이지, OAuth2 관련, refresh token 엔드포인트는 인증 없이 접근 허용
-                        .requestMatchers("/", "/oauth2/**", "/auth/refresh").permitAll()
+                        .requestMatchers("/api/login/**", "/oauth2/**", "/auth/refresh", "/").permitAll()
                         .anyRequest().authenticated()
                 );
 
         return http.build();
     }
+
 
     // CORS 설정
     private CorsConfigurationSource corsConfig() {
@@ -99,9 +96,10 @@ public class SecurityConfig {
             @Override
             public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                config.setAllowedOrigins((List.of("http://localhost:3000","https://localhost:8080", "https://localhost:8443", "https://localhost:3000", "https://new-valance-server.o-r.kr")));
                 config.setAllowedMethods(Collections.singletonList("*"));
                 config.setAllowCredentials(true);
+                config.setAllowedHeaders(Collections.singletonList("*"));
                 config.setExposedHeaders(Collections.singletonList("Authorization"));
                 config.setMaxAge(3600L);
                 return config;
