@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -72,17 +73,24 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfig()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 페이지 비활성화
+                .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
                         .successHandler(customSuccessHandler)
                         .failureHandler(customFailHandler)
-                        .loginPage("/custom-login") // 사용자 정의 로그인 페이지 설정
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/login/**", "/oauth2/**", "/auth/refresh", "/").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                "/actuator/**",
+                                "/api/login/**",
+                                "/oauth2/**",
+                                "/auth/refresh",
+                                "/custom-login", // ✅ 로그인 페이지 접근 허용
+                                "/"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 );
 
@@ -90,20 +98,26 @@ public class SecurityConfig {
     }
 
 
+
+
+
     // CORS 설정
     private CorsConfigurationSource corsConfig() {
-        return new CorsConfigurationSource() {
-            @Override
-            public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-                CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins((List.of("http://localhost:3000","https://localhost:8080", "https://localhost:8443", "https://localhost:3000", "https://new-valance-server.o-r.kr")));
-                config.setAllowedMethods(Collections.singletonList("*"));
-                config.setAllowCredentials(true);
-                config.setAllowedHeaders(Collections.singletonList("*"));
-                config.setExposedHeaders(Collections.singletonList("Authorization"));
-                config.setMaxAge(3600L);
-                return config;
-            }
+        return request -> {
+            CorsConfiguration config = new CorsConfiguration();
+            // 허용 Origin 목록 확장
+            config.setAllowedOrigins(List.of(
+                    "http://localhost:3000",
+                    "https://new-valance-server.o-r.kr",
+                    "https://loadbalancer-799709838.ap-northeast-2.elb.amazonaws.com"
+            ));
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // OPTIONS 필수
+            config.setAllowedHeaders(List.of("*"));
+            config.setExposedHeaders(List.of("Authorization"));
+            config.setAllowCredentials(true);
+            config.setMaxAge(3600L);
+            return config;
         };
     }
+
 }

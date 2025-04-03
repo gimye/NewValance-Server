@@ -1,12 +1,16 @@
-# open jdk 17 버전의 환경을 구성
 FROM eclipse-temurin:17-jdk
-
-# build가 되는 시점에 JAR_FILE이라는 변수 명에 build/libs/*.jar 선언
-# build/libs - gradle로 빌드했을 때 jar 파일이 생성되는 경로
 ARG JAR_FILE=build/libs/*.jar
 
-# JAR_FILE을 app.jar로 복사
+# 모든 설정 파일 복사
+COPY src/main/resources/application*.yml /app/config/
+COPY src/main/resources/application-API-key.properties /app/config/
+
+# JAR 복사
 COPY ${JAR_FILE} app.jar
 
-# 운영 및 개발에서 사용되는 환경 설정을 분리
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "/app.jar"]
+# 환경 변수 설정
+ENV SPRING_CONFIG_LOCATION=/app/config/
+ENV SPRING_PROFILES_ACTIVE=prod
+
+# ✅ 실행 명령 수정 (포트 설정 제거)
+ENTRYPOINT ["java", "-Dspring.config.location=/app/config/", "-Dspring.profiles.active=prod", "-jar", "/app.jar"]
