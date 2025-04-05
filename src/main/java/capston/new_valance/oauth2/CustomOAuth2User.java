@@ -1,6 +1,7 @@
 package capston.new_valance.oauth2;
 
 import capston.new_valance.model.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -10,6 +11,7 @@ import java.util.Map;
 
 public class CustomOAuth2User implements OAuth2User {
 
+    @Getter
     private final User user;
     private final Map<String, Object> attributes;
     private final String nameAttributeKey;
@@ -20,10 +22,6 @@ public class CustomOAuth2User implements OAuth2User {
         this.attributes = attributes;
         this.nameAttributeKey = nameAttributeKey;
         this.isNew = isNew;
-    }
-
-    public User getUser() {
-        return user;
     }
 
     public boolean isNewUser() {

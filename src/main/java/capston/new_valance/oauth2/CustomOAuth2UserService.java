@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -75,7 +76,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private OAuth2User processNaverUser(OAuth2User oAuth2User) {
-        Map<String, Object> responseMap = (Map<String, Object>) oAuth2User.getAttributes().get("response");
+        Object rawResponse = oAuth2User.getAttributes().get("response");
+
+        if (!(rawResponse instanceof Map<?, ?> rawMap)) {
+            throw createOAuthException("invalid_response", "Naver 응답 형식이 잘못되었습니다.");
+        }
+
+        // 타입 안정성을 보장하기 위해 새 Map 생성
+        Map<String, Object> responseMap = new HashMap<>();
+        rawMap.forEach((key, value) -> {
+            if (key instanceof String) {
+                responseMap.put((String) key, value);
+            }
+        });
+
         NaverMemberInfoResponse response = new NaverMemberInfoResponse(responseMap);
         validateEmail(response.getEmail(), "Naver");
         checkExistingEmail(response.getEmail(), LoginProvider.naver);
@@ -90,6 +104,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         return new CustomOAuth2User(user, responseMap, "id", isNew.get());
     }
+
 
     private User createNewUser(OAuth2Response response, LoginProvider provider) {
         return User.builder(response.getEmail(), provider)
