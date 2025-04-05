@@ -29,27 +29,34 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException, ServletException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        if (!(oAuth2User instanceof CustomOAuth2User)) {
+        if (!(oAuth2User instanceof CustomOAuth2User customUser)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "OAuth2 인증 실패");
             return;
         }
 
-        CustomOAuth2User customUser = (CustomOAuth2User) oAuth2User;
         User user = customUser.getUser();
 
         // JWT 토큰 생성
         String accessToken = jwtUtil.generateToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);
 
-        // JSON 응답 생성
-        Map<String, String> tokenResponse = new HashMap<>();
-        tokenResponse.put("accessToken", accessToken);
-        tokenResponse.put("refreshToken", refreshToken);
-        tokenResponse.put("email", user.getEmail());
-        tokenResponse.put("username", user.getUsername());
+        // JSON 응답 구성
+        Map<String, Object> json = new HashMap<>();
+        json.put("access_token", accessToken);
+        json.put("refresh_token", refreshToken);
+        json.put("isNew", customUser.isNewUser());
+        json.put("expireIn", 3600); // 1시간 (초 단위)
+
+        Map<String, Object> userJson = new HashMap<>();
+        userJson.put("userId", user.getUserId());
+        userJson.put("email", user.getEmail());
+        userJson.put("username", user.getUsername());
+        userJson.put("profileImage", user.getProfilePictureUrl());
+
+        json.put("user", userJson);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(objectMapper.writeValueAsString(tokenResponse));
+        response.getWriter().write(objectMapper.writeValueAsString(json));
     }
 }

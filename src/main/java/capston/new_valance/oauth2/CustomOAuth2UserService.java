@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +23,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
 
-
     @Override
-    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         String providerId = userRequest.getClientRegistration().getRegistrationId().toLowerCase();
@@ -44,55 +42,63 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    // Google 처리 메서드
     private OAuth2User processGoogleUser(OAuth2User oAuth2User) {
         GoogleMemberInfoResponse response = new GoogleMemberInfoResponse(oAuth2User.getAttributes());
         validateEmail(response.getEmail(), "Google");
         checkExistingEmail(response.getEmail(), LoginProvider.google);
 
+        AtomicBoolean isNew = new AtomicBoolean(false);
         User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.google)
                 .map(existingUser -> updateExistingUser(existingUser, response))
-                .orElseGet(() -> userRepository.save(createNewUser(response, LoginProvider.google)));
+                .orElseGet(() -> {
+                    isNew.set(true);
+                    return userRepository.save(createNewUser(response, LoginProvider.google));
+                });
 
-        return new CustomOAuth2User(user, oAuth2User.getAttributes(), "sub");
+        return new CustomOAuth2User(user, oAuth2User.getAttributes(), "sub", isNew.get());
     }
 
-    // Kakao 처리 메서드
     private OAuth2User processKakaoUser(OAuth2User oAuth2User) {
         KakaoMemberInfoResponse response = new KakaoMemberInfoResponse(oAuth2User.getAttributes());
         validateEmail(response.getEmail(), "Kakao");
         checkExistingEmail(response.getEmail(), LoginProvider.kakao);
 
+        AtomicBoolean isNew = new AtomicBoolean(false);
         User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.kakao)
                 .map(existingUser -> updateExistingUser(existingUser, response))
-                .orElseGet(() -> userRepository.save(createNewUser(response, LoginProvider.kakao)));
+                .orElseGet(() -> {
+                    isNew.set(true);
+                    return userRepository.save(createNewUser(response, LoginProvider.kakao));
+                });
 
-        return new CustomOAuth2User(user, oAuth2User.getAttributes(), "id");
+        return new CustomOAuth2User(user, oAuth2User.getAttributes(), "id", isNew.get());
     }
 
-    // Naver 처리 메서드
     private OAuth2User processNaverUser(OAuth2User oAuth2User) {
         Map<String, Object> responseMap = (Map<String, Object>) oAuth2User.getAttributes().get("response");
         NaverMemberInfoResponse response = new NaverMemberInfoResponse(responseMap);
         validateEmail(response.getEmail(), "Naver");
         checkExistingEmail(response.getEmail(), LoginProvider.naver);
 
+        AtomicBoolean isNew = new AtomicBoolean(false);
         User user = userRepository.findByEmailAndLoginProvider(response.getEmail(), LoginProvider.naver)
                 .map(existingUser -> updateExistingUser(existingUser, response))
-                .orElseGet(() -> userRepository.save(createNewUser(response, LoginProvider.naver)));
+                .orElseGet(() -> {
+                    isNew.set(true);
+                    return userRepository.save(createNewUser(response, LoginProvider.naver));
+                });
 
-        return new CustomOAuth2User(user, responseMap, "id");
+        return new CustomOAuth2User(user, responseMap, "id", isNew.get());
     }
 
     private User createNewUser(OAuth2Response response, LoginProvider provider) {
         return User.builder(response.getEmail(), provider)
-                .username(response.getNickname()) // null 허용
-                .profilePictureUrl(response.getProfileImageUrl()) // null 허용
+                .username(response.getNickname())
+                .profilePictureUrl(response.getProfileImageUrl())
                 .createdAt(LocalDateTime.now())
                 .build();
     }
 
-    // 공통 유효성 검사 메서드
     private void checkExistingEmail(String email, LoginProvider provider) {
         userRepository.findByEmail(email).ifPresent(existingUser -> {
             if (!existingUser.getLoginProvider().equals(provider)) {
@@ -110,7 +116,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    // 기존 사용자 업데이트 로직
     private User updateExistingUser(User user, OAuth2Response response) {
         boolean needsUpdate = false;
 
@@ -127,7 +132,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return needsUpdate ? userRepository.save(user) : user;
     }
 
-    // 예외 생성 유틸리티
     private OAuth2AuthenticationException createOAuthException(String errorCode, String message) {
         return new OAuth2AuthenticationException(new OAuth2Error(errorCode, message, null));
     }
