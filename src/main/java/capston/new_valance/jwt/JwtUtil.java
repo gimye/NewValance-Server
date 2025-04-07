@@ -8,7 +8,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -21,34 +20,33 @@ public class JwtUtil {
     private final SecretKey secretKey;
     private final long accessExpireMs = 86400000; // 24시간
 
-    // JwtUtil에서 사용할 Secret Key 받아오기
     public JwtUtil(@Value("${SECRET_KEY}") String secret) {
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
-    // 토큰 생성 (카카오 사용자 정보 기반)
+    // Access Token 생성
     public String generateToken(User user) {
         JwtBuilder builder = Jwts.builder()
                 .claim("email", user.getEmail())
-                .claim("userId", user.getUserId());
+                .claim("userId", user.getUserId())
+                .claim("provider", user.getLoginProvider().name());
 
-        // 닉네임 존재 시에만 클레임 추가
         if (user.getUsername() != null) {
-            builder.claim("name", user.getUsername());
+            builder.claim("username", user.getUsername());
         }
 
-        // 프로필 사진 존재 시에만 클레임 추가
         if (user.getProfilePictureUrl() != null) {
             builder.claim("picture", user.getProfilePictureUrl());
         }
 
         return builder
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 3600000))
+                .expiration(new Date(System.currentTimeMillis() + accessExpireMs))
                 .signWith(secretKey)
                 .compact();
     }
 
+    // Refresh Token 생성
     public String generateRefreshToken(User user) {
         return Jwts.builder()
                 .claim("userId", user.getUserId())
@@ -58,19 +56,22 @@ public class JwtUtil {
                 .compact();
     }
 
-
-    // 토큰 유효성 검사
+    // ✅ 유효성 검사 (최신 방식)
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+            Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token);
+            log.info("✅ JWT 유효성 검사 통과");
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            log.error("Invalid JWT: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("❌ JWT 유효성 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             return false;
         }
     }
 
-    // 클레임 추출
+    // ✅ 클레임 추출 (이미 최신 방식으로 잘 되어 있음!)
     public Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -79,7 +80,6 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    // 사용자 ID 추출
     public Long getUserId(String token) {
         return extractClaims(token).get("userId", Long.class);
     }

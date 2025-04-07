@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 import java.util.Collections;
 
@@ -27,30 +28,40 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Authorization header에서 JWT 추출
         String token = resolveToken(request);
+        System.out.println("🟡 요청 URL: " + request.getRequestURI());
+        System.out.println("🟡 추출된 토큰: " + token);
 
-        // token 유효성 체크
         if (token != null && jwtUtil.validateToken(token)) {
-            Claims claims = jwtUtil.extractClaims(token);
+            try {
+                Claims claims = jwtUtil.extractClaims(token);
+                System.out.println("✅ JwtFilter 동작함");
+                System.out.println("✅ userId: " + claims.get("userId"));
+                System.out.println("✅ provider: " + claims.get("provider"));
 
-            // 인증 객체 생성
-            UserPrincipal principal = new UserPrincipal(
-                    claims.get("userId", Long.class),
-                    claims.get("username", String.class),
-                    claims.get("email", String.class),
-                    LoginProvider.valueOf(claims.get("provider", String.class))
-            );
+                // 인증 객체 생성
+                UserPrincipal principal = new UserPrincipal(
+                        claims.get("userId", Long.class),
+                        claims.get("username", String.class),
+                        claims.get("email", String.class),
+                        LoginProvider.valueOf(claims.get("provider", String.class))
+                );
 
-            Authentication auth = new UsernamePasswordAuthenticationToken(
-                    principal, null, Collections.emptyList());
+                Authentication auth = new UsernamePasswordAuthenticationToken(
+                        principal, null, Collections.emptyList());
 
-            // SecurityContext에 사용자 정보 등록
-            SecurityContextHolder.getContext().setAuthentication(auth);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid JWT Token", e);
+            }
+        } else {
+            System.out.println("⚠️ 토큰이 없거나 유효하지 않음");
         }
 
         filterChain.doFilter(request, response);
     }
+
 
     private String resolveToken(HttpServletRequest req) {
         String bearerToken = req.getHeader("Authorization");

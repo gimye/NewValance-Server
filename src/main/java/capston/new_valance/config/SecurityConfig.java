@@ -1,5 +1,6 @@
 package capston.new_valance.config;
 
+import capston.new_valance.jwt.JwtAuthenticationEntryPoint;
 import capston.new_valance.jwt.JwtFilter;
 import capston.new_valance.jwt.JwtUtil;
 import capston.new_valance.oauth2.CustomFailHandler;
@@ -24,6 +25,7 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,6 +43,8 @@ public class SecurityConfig {
     private final CustomSuccessHandler customSuccessHandler;
     private final CustomFailHandler customFailHandler;
     private final ClientRegistrationRepository clientRegistrationRepository;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint; // ✅ 추가
+
 
     @Bean
     public OAuth2AuthorizedClientManager authorizedClientManager() {
@@ -76,11 +80,17 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) // ✅ 추가
+                )
+
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
                         .successHandler(customSuccessHandler)
                         .failureHandler(customFailHandler)
                 )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
@@ -88,18 +98,16 @@ public class SecurityConfig {
                                 "/api/login/**",
                                 "/oauth2/**",
                                 "/auth/refresh",
-                                "/custom-login", // ✅ 로그인 페이지 접근 허용
+                                "/custom-login",
                                 "/"
                         ).permitAll()
                         .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        // ✅ 필터 추가
 
         return http.build();
     }
-
-
-
-
 
     // CORS 설정
     private CorsConfigurationSource corsConfig() {

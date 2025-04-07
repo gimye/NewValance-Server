@@ -2,16 +2,17 @@ package capston.new_valance.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "videoversions")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class VideoVersion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long videoId;
@@ -32,5 +33,9 @@ public class VideoVersion {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
-}
 
+    @PrePersist
+    public void setCreatedAt() {
+        this.createdAt = LocalDateTime.now();
+    }
+}

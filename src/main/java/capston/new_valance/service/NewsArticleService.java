@@ -1,69 +1,69 @@
 package capston.new_valance.service;
 
-import capston.new_valance.dto.req.CreateVideoRequest;
+import capston.new_valance.dto.NewsSimpleDto;
+import capston.new_valance.dto.NewsStandResponseDto;
 import capston.new_valance.model.NewsArticle;
-import capston.new_valance.model.VideoVersion;
-import capston.new_valance.model.Tag;
 import capston.new_valance.repository.NewsArticleRepository;
-import capston.new_valance.repository.VideoVersionRepository;
-import capston.new_valance.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class NewsArticleService {
 
     private final NewsArticleRepository newsArticleRepository;
-    private final VideoVersionRepository videoVersionRepository;
-    private final TagRepository tagRepository;
 
-    @Transactional
-    public NewsArticle createNewsArticle(CreateVideoRequest request) {
-        NewsArticle article = new NewsArticle();
-        article.setTitle(request.getTitle());
-        article.setCategoryId(request.getCategoryId());
-        article.setOriginalUrl(request.getOriginalUrl());
-        article.setPublishedAt(request.getPublishedAt());
-        article.setCreatedAt(request.getCreatedAt());
-
-        // VideoVersion 생성 및 연결
-        List<VideoVersion> versions = new ArrayList<>();
-        versions.add(createVideoVersion("easy", request.getEasyVersionUrl(), article, request.getThumbnailUrl()));
-        versions.add(createVideoVersion("normal", request.getNormalVersionUrl(), article, request.getThumbnailUrl()));
-        article.setVideoVersions(versions);
-
-        Set<Tag> tags = processTagsAndGetTagSet(request.getTags());
-        article.setTags(tags);
-
-        return newsArticleRepository.save(article);
+    /**
+     * 카테고리별 영상 조회 (페이지네이션 적용)
+     */
+    public Page<NewsSimpleDto> getNewsByCategory(Long categoryId, Pageable pageable) {
+        return newsArticleRepository.findByCategoryIdOrderByPublishedAtDesc(categoryId, pageable)
+                .map(this::toSimpleDto);
     }
 
-    private VideoVersion createVideoVersion(String versionName, String url, NewsArticle article, String thumbnailUrl) {
-        VideoVersion version = new VideoVersion();
-        version.setVersionName(versionName);
-        version.setVideoUrl(url);
-        version.setArticle(article);
-        version.setThumbnailUrl(thumbnailUrl);
-        version.setCreatedAt(article.getCreatedAt());
-        return version;
+    /**
+     * 홈 가판대 (카테고리별 최신 10개씩)
+     */
+    public List<NewsStandResponseDto> getNewsStand() {
+        // TreeMap을 사용하여 카테고리 ID 기준 오름차순 정렬
+        Map<Long, String> categoryMap = new TreeMap<>(Map.of(
+                1L, "정치",
+                2L, "경제",
+                3L, "국제",
+                4L, "문화",
+                5L, "사회",
+                6L, "IT"
+        ));
+
+        return categoryMap.entrySet().stream()
+                .map(entry -> {
+                    Long categoryId = entry.getKey();
+                    String categoryName = entry.getValue();
+                    List<NewsSimpleDto> newsList = newsArticleRepository
+                            .findTop10ByCategoryIdOrderByPublishedAtDesc(categoryId)
+                            .stream()
+                            .map(this::toSimpleDto)
+                            .collect(Collectors.toList());
+
+                    return NewsStandResponseDto.builder()
+                            .categoryId(categoryId)
+                            .categoryName(categoryName)
+                            .newsList(newsList)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
-    private Set<Tag> processTagsAndGetTagSet(String tagString) {
-        Set<Tag> tagSet = new HashSet<>();
-        String[] tagNames = tagString.split(",");
-        for (String tagName : tagNames) {
-            Tag tag = tagRepository.findByTagName(tagName)
-                    .orElseGet(() -> {
-                        Tag newTag = new Tag();
-                        newTag.setTagName(tagName);
-                        return tagRepository.save(newTag);
-                    });
-            tagSet.add(tag);
-        }
-        return tagSet;
+    private NewsSimpleDto toSimpleDto(NewsArticle article) {
+        return NewsSimpleDto.builder()
+                .articleId(article.getArticleId())
+                .title(article.getTitle())
+                .thumbnailUrl(article.getThumbnailUrl())
+                .build();
     }
 }

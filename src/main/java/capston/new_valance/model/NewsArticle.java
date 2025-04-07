@@ -2,20 +2,19 @@ package capston.new_valance.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "newsarticles")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class NewsArticle {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long articleId;
@@ -30,6 +29,9 @@ public class NewsArticle {
     private String originalUrl;
 
     @Column(nullable = false)
+    private String thumbnailUrl; // ✅ 새로 추가됨
+
+    @Column(nullable = false)
     private LocalDateTime publishedAt;
 
     @Column(nullable = false)
@@ -37,6 +39,7 @@ public class NewsArticle {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<VideoVersion> videoVersions = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.MERGE)
@@ -45,6 +48,14 @@ public class NewsArticle {
             joinColumns = @JoinColumn(name = "article_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
+    @PrePersist
+    public void setDefaults() {
+        this.createdAt = LocalDateTime.now();
+        if (this.publishedAt == null) {
+            this.publishedAt = LocalDateTime.now(); // 필요 시 publishedAt 기본값 설정
+        }
+    }
 }

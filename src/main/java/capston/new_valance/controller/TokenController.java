@@ -3,6 +3,7 @@ package capston.new_valance.controller;
 import capston.new_valance.jwt.JwtUtil;
 import capston.new_valance.model.User;
 import capston.new_valance.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j; // Lombok을 사용한 로깅
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 public class TokenController {
@@ -21,42 +23,37 @@ public class TokenController {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
     }
+
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> tokenRequest) {
+    public Map<String, String> refreshToken(@RequestBody Map<String, String> tokenRequest) {
         String refreshToken = tokenRequest.get("refresh_token");
 
-        // refresh token이 없으면 400 Bad Request 응답
         if (refreshToken == null || refreshToken.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Refresh token is missing"));
+            log.warn("Refresh token is missing in the request");
+            throw new IllegalArgumentException("Refresh token is missing");
         }
 
-        // refresh token 유효성 검증
         if (!jwtUtil.validateToken(refreshToken)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid refresh token"));
+            log.warn("Invalid refresh token: {}", refreshToken);
+            throw new IllegalArgumentException("Invalid refresh token");
         }
 
-        // refresh token에서 사용자 식별 정보(예, userId) 추출
         Long userId = jwtUtil.getUserId(refreshToken);
+        log.debug("Extracted userId from refresh token: {}", userId);
 
-        // DB에서 사용자 조회
-        Optional<User> optionalUser = userRepository.findById(userId);
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "User not found"));
-        }
-        User user = optionalUser.get();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // 새로운 access token 발급
         String newAccessToken = jwtUtil.generateToken(user);
+        String newRefreshToken = jwtUtil.generateRefreshToken(user);
 
-        // (옵션) 새로운 refresh token도 발급할 수 있음.
-        // String newRefreshToken = jwtUtil.generateRefreshToken(user);
-        // 필요시 refresh token 저장소 갱신 로직 추가
+        log.info("Generated new tokens for user: {}", user.getEmail());
 
-        return ResponseEntity.ok(Map.of(
+        return Map.of(
                 "access_token", newAccessToken,
-                "message", "Access token refreshed successfully"
-        ));
+                "refresh_token", newRefreshToken,
+                "message", "Tokens refreshed successfully"
+        );
     }
 }
+
