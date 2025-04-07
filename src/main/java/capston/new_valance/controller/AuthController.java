@@ -1,8 +1,6 @@
 package capston.new_valance.controller;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;

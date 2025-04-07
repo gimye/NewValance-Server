@@ -4,12 +4,9 @@ import capston.new_valance.jwt.JwtUtil;
 import capston.new_valance.model.User;
 import capston.new_valance.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j; // Lombok을 사용한 로깅
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @RestController
