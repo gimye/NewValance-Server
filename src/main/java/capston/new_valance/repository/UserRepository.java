@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 이메일만으로 조회 (중복 체크에 사용)
     Optional<User> findByEmail(String email);
+
+    Optional<User> findByUsername(String username);
 }

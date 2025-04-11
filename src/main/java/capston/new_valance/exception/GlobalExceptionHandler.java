@@ -1,8 +1,12 @@
 package capston.new_valance.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;  // DB 제약 위반 예외
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,24 +18,39 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 기존 ResponseStatusException 핸들링
+    // 1. ResponseStatusException 처리
     @ExceptionHandler(ResponseStatusException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, Object> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
-        HttpStatus status = (HttpStatus) ex.getStatusCode(); // 명시적 캐스팅
-
-        return Map.of(
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
+        HttpStatus status = (HttpStatus) ex.getStatusCode();
+        Map<String, Object> body = Map.of(
                 "timestamp", System.currentTimeMillis(),
                 "status", status.value(),
                 "error", status.getReasonPhrase(),
                 "message", ex.getReason(),
                 "path", request.getRequestURI()
         );
+        return new ResponseEntity<>(body, status);
     }
 
+    // 2. 유효성 검사 실패 처리 (MethodArgumentNotValidException)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation failed");
 
+        return Map.of(
+                "timestamp", System.currentTimeMillis(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Bad Request",
+                "message", errorMessage,
+                "path", request.getRequestURI()
+        );
+    }
 
-    // OAuth2 인증 예외 처리
+    // 3. OAuth2 인증 실패 처리
     @ExceptionHandler(OAuth2AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, Object> handleOAuth2AuthenticationException(OAuth2AuthenticationException ex) {
@@ -42,6 +61,7 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // 4. JWT 인증 관련 예외 처리 (예: JWT 만료, 잘못된 토큰)
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, Object> handleJwtRuntimeException(RuntimeException ex, HttpServletRequest request) {
@@ -54,6 +74,7 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // 5. 불법 인자 예외 처리 (예: 잘못된 요청 파라미터)
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
@@ -66,6 +87,7 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // 6. 핸들러를 찾을 수 없는 경우 (404 처리)
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, Object> handleNotFound(NoHandlerFoundException ex, HttpServletRequest request) {
@@ -78,8 +100,33 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // 7. DB 제약 위반 예외 처리 (DataIntegrityViolationException)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+        return Map.of(
+                "timestamp", System.currentTimeMillis(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Bad Request",
+                "message", "Database constraint violation: " + ex.getMostSpecificCause().getMessage(),
+                "path", request.getRequestURI()
+        );
+    }
 
-    // 기타 알 수 없는 예외 처리
+    // 8. 유효성 검사 제약 위반 처리 (ConstraintViolationException)
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+        return Map.of(
+                "timestamp", System.currentTimeMillis(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Bad Request",
+                "message", "Validation error: " + ex.getMessage(),
+                "path", request.getRequestURI()
+        );
+    }
+
+    // 9. 기타 알 수 없는 예외 처리
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, Object> handleOtherExceptions(Exception ex, HttpServletRequest request) {
@@ -91,5 +138,4 @@ public class GlobalExceptionHandler {
                 "path", request.getRequestURI()
         );
     }
-
 }

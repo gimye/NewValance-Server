@@ -13,7 +13,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -27,7 +29,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
-
+        log.info("🪪 Authorization Header: {}", request.getHeader("Authorization"));
         String token = resolveToken(request);
         System.out.println("🟡 요청 URL: " + request.getRequestURI());
         System.out.println("🟡 추출된 토큰: " + token);

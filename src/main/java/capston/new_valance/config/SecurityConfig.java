@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpMethod;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -69,42 +69,53 @@ public class SecurityConfig {
         );
     }
 
+    // API 요청에 대한 별도 SecurityFilterChain (JWT 검증만 적용, OAuth2 로그인 제외)
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher("/api/**") // 오직 /api/** 경로에만 적용
                 .cors(cors -> cors.configurationSource(corsConfig()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) // ✅ 추가
-                )
-
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
-                        .successHandler(customSuccessHandler)
-                        .failureHandler(customFailHandler)
-                )
-
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/actuator/**",
-                                "/api/login/**",
-                                "/oauth2/**",
-                                "/auth/refresh",
-                                "/custom-login",
-                                "/"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.anyRequest().permitAll()) // 인증 없이 접근 허용하거나, 필요시 JwtFilter로 인증 설정
                 .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
-        // ✅ 필터 추가
 
         return http.build();
     }
+
+    // 나머지 웹(회원가입, OAuth2 로그인 등)에 대한 SecurityFilterChain
+    @Bean
+    @Order(2)
+    public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfig()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers(
+                                        "/actuator/**",
+                                        "/api/login/**",
+                                        "/oauth2/**",
+                                        "/auth/refresh",
+                                        "/custom-login",
+                                        "/"
+                                )
+                                .permitAll()
+                                .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(endpoint -> endpoint.userService(customOAuth2UserService))
+                        .successHandler(customSuccessHandler)
+                        .failureHandler(customFailHandler))
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+
+        return http.build();
+    }
+
 
     // CORS 설정
     private CorsConfigurationSource corsConfig() {
