@@ -6,18 +6,29 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "tags")
+@Table(name = "usertoptags")
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tag {
+public class UserTopTag {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int userTagId;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "tag_id")
     private int tagId;
 
-    @Column(name = "tag_name", length = 50, nullable = false)
-    private String tagName;
+    @Column(name = "weight")
+    private float weight;
+
+    @Column(name = "last_updated")
+    private LocalDateTime lastUpdated;
 }
