@@ -1,12 +1,12 @@
+// VideoVersionDto.java
 package capston.new_valance.dto;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+@Data
 @Builder
 public class VideoVersionDto {
-    private Long videoId;
+    private String versionName;
     private String videoUrl;
-    private String thumbnailUrl;
 }

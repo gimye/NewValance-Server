@@ -6,6 +6,8 @@ import capston.new_valance.service.NewsArticleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,22 +20,32 @@ public class NewsArticleController {
 
     private final NewsArticleService newsService;
 
-    // ✅ 홈 가판대 API - 카테고리별 최신 뉴스 10개씩
+    // 홈 가판대 API - 카테고리별 최신 뉴스 10개씩 반환
     @GetMapping("/home")
     public ResponseEntity<List<NewsStandResponseDto>> getNewsStand() {
         return ResponseEntity.ok(newsService.getNewsStand());
     }
 
-    // ✅ 카테고리별 뉴스 조회 API (페이징 포함)
+    // 카테고리별 뉴스 조회 API (페이징 적용)
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<Page<NewsSimpleDto>> getNewsByCategory(
+    public ResponseEntity<PagedModel<NewsSimpleDto>> getNewsByCategory(
             @PathVariable("categoryId") Long categoryId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size
     ) {
         PageRequest pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(newsService.getNewsByCategory(categoryId, pageable));
+        Page<NewsSimpleDto> newsPage = newsService.getNewsByCategory(categoryId, pageable);
+
+        PagedModel<NewsSimpleDto> pagedModel = PagedModel.of(
+                newsPage.getContent(),
+                new PagedModel.PageMetadata(
+                        newsPage.getSize(),
+                        newsPage.getNumber(),
+                        newsPage.getTotalElements(),
+                        newsPage.getTotalPages()
+                )
+        );
+
+        return ResponseEntity.ok(pagedModel);
     }
-
-
 }

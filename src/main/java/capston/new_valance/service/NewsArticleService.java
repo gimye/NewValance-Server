@@ -19,25 +19,22 @@ public class NewsArticleService {
     private final NewsArticleRepository newsArticleRepository;
 
     /**
-     * 카테고리별 영상 조회 (페이지네이션 적용)
+     * 카테고리별 뉴스 조회 (페이지네이션 적용)
      */
     public Page<NewsSimpleDto> getNewsByCategory(Long categoryId, Pageable pageable) {
-        return newsArticleRepository.findByCategoryIdOrderByPublishedAtDesc(categoryId, pageable)
-                .map(this::toSimpleDto);
+        // 페이지네이션과 정렬은 service 또는 Repository에서 처리합니다.
+        Page<NewsArticle> page = newsArticleRepository.findByCategoryId(categoryId, pageable);
+        return page.map(this::toSimpleDto);
     }
 
-    /**
-     * 홈 가판대 (카테고리별 최신 10개씩)
-     */
     public List<NewsStandResponseDto> getNewsStand() {
-        // TreeMap을 사용하여 카테고리 ID 기준 오름차순 정렬
         Map<Long, String> categoryMap = new TreeMap<>(Map.of(
                 1L, "정치",
                 2L, "경제",
                 3L, "국제",
                 4L, "문화",
                 5L, "사회",
-                6L, "IT"
+                6L, "IT/과학"
         ));
 
         return categoryMap.entrySet().stream()

@@ -9,15 +9,12 @@ import java.time.LocalDateTime;
 @Table(name = "videoversions")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class VideoVersion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long videoId;
 
-    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)
     private NewsArticle article;
@@ -28,9 +25,6 @@ public class VideoVersion {
     @Column(nullable = false)
     private String videoUrl;
 
-    @Column
-    private String thumbnailUrl;
-
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -38,4 +32,14 @@ public class VideoVersion {
     public void setCreatedAt() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @Builder
+    public VideoVersion(NewsArticle article, String versionName, String videoUrl) {
+        this.article = article;
+        this.versionName = versionName;
+        this.videoUrl = videoUrl;
+        this.createdAt = LocalDateTime.now();
+    }
 }
+
+

@@ -29,7 +29,7 @@ public class NewsArticle {
     private String originalUrl;
 
     @Column(nullable = false)
-    private String thumbnailUrl; // ✅ 새로 추가됨
+    private String thumbnailUrl;
 
     @Column(nullable = false)
     private LocalDateTime publishedAt;
@@ -55,7 +55,7 @@ public class NewsArticle {
     public void setDefaults() {
         this.createdAt = LocalDateTime.now();
         if (this.publishedAt == null) {
-            this.publishedAt = LocalDateTime.now(); // 필요 시 publishedAt 기본값 설정
+            this.publishedAt = LocalDateTime.now();
         }
     }
 }
