@@ -1,6 +1,5 @@
 package capston.new_valance.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,19 +42,4 @@ public class VideoVersion {
         this.createdAt = LocalDateTime.now();
     }
 
-    // ✅ 테스트용 정적 팩토리 메서드
-    public static VideoVersion testInstance(Long videoId, String versionName, String videoUrl) {
-        VideoVersion video = new VideoVersion();
-        try {
-            Field idField = VideoVersion.class.getDeclaredField("videoId");
-            idField.setAccessible(true);
-            idField.set(video, videoId);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set videoId for test instance", e);
-        }
-        video.versionName = versionName;
-        video.videoUrl = videoUrl;
-        video.createdAt = LocalDateTime.now();
-        return video;
-    }
 }
