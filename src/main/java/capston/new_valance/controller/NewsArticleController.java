@@ -2,6 +2,7 @@ package capston.new_valance.controller;
 
 import capston.new_valance.dto.NewsSimpleDto;
 import capston.new_valance.dto.NewsStandResponseDto;
+import capston.new_valance.dto.res.BannerResponseDto;
 import capston.new_valance.service.NewsArticleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,12 @@ public class NewsArticleController {
     @GetMapping("/home")
     public ResponseEntity<List<NewsStandResponseDto>> getNewsStand() {
         return ResponseEntity.ok(newsService.getNewsStand());
+    }
+
+    // 홈 배너 API - (임시) 랜덤 3개의
+    @GetMapping("/banner")
+    public ResponseEntity<List<BannerResponseDto>> getBanner() {
+        return ResponseEntity.ok(newsService.getBanner());
     }
 
     // 카테고리별 뉴스 조회 API (페이징 적용)

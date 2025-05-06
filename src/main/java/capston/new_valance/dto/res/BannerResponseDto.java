@@ -1,18 +1,16 @@
-// NewsWithVideosDto.java
-package capston.new_valance.dto;
+// BannerResponseDto.java
+package capston.new_valance.dto.res;
 
+import capston.new_valance.dto.VideoVersionDto;
 import lombok.Builder;
 import lombok.Data;
-
 import java.util.List;
 
 @Data
 @Builder
-public class NewsWithVideosDto {
-    private Long newsId;
+public class BannerResponseDto {
+    private Long articleId;
     private String title;
-    private String originalUrl;
     private String thumbnailUrl;
     private List<VideoVersionDto> videoVersions;
-    private boolean liked;
 }

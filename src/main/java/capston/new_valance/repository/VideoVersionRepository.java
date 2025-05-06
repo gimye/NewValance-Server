@@ -5,7 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+import java.util.Optional;
+
 public interface VideoVersionRepository extends JpaRepository<VideoVersion, Long> {
-    // 뉴스 기사(articleId) 별 영상 버전을 versionName 오름차순으로 조회
+
+    // 이미 있는 메서드일 수 있음
     List<VideoVersion> findByArticle_ArticleIdOrderByVersionNameAsc(Long articleId);
+
+    // 추가해줘야 할 메서드
+    Optional<VideoVersion> findTopByArticle_ArticleIdOrderByVersionNameAsc(Long articleId);
 }

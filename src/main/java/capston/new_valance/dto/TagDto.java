@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class VideoVersionDto {
-    private String versionName;
-    private String videoUrl;
+public class TagDto {
+    private int tagId;
+    private String tagName;
 }

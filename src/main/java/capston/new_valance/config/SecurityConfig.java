@@ -99,6 +99,7 @@ public class SecurityConfig {
                         auth.requestMatchers(
                                         "/actuator/**",
                                         "/api/login/**",
+                                        "/api/ai/**",
                                         "/oauth2/**",
                                         "/auth/refresh",
                                         "/custom-login",

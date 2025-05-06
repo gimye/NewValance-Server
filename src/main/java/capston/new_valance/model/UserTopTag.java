@@ -31,4 +31,15 @@ public class UserTopTag {
 
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
+
+    public void increaseWeight(float delta) {
+        this.weight += delta;
+        this.lastUpdated = LocalDateTime.now();
+    }
+
+    public void decreaseWeight(float delta) {
+        this.weight -= delta;
+        this.lastUpdated = LocalDateTime.now();
+    }
+
 }
