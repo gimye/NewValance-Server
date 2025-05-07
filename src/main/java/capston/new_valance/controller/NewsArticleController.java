@@ -2,7 +2,7 @@ package capston.new_valance.controller;
 
 import capston.new_valance.dto.NewsSimpleDto;
 import capston.new_valance.dto.NewsStandResponseDto;
-import capston.new_valance.dto.res.BannerResponseDto;
+import capston.new_valance.dto.res.BannerResponse;
 import capston.new_valance.service.NewsArticleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,7 +28,7 @@ public class NewsArticleController {
 
     // 홈 배너 API - (임시) 랜덤 3개의
     @GetMapping("/banner")
-    public ResponseEntity<List<BannerResponseDto>> getBanner() {
+    public ResponseEntity<List<BannerResponse>> getBanner() {
         return ResponseEntity.ok(newsService.getBanner());
     }
 

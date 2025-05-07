@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class BannerResponseDto {
+public class BannerResponse {
     private Long articleId;
     private String title;
     private String thumbnailUrl;

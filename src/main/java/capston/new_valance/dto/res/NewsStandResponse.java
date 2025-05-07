@@ -8,7 +8,7 @@ import java.util.List;
 
 @Builder
 @Getter
-public class NewsStandResponseDto {
+public class NewsStandResponse {
     private Long categoryId;
     private String categoryName;
     private List<NewsSimpleDto> newsList;

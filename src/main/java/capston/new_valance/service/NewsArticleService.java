@@ -3,7 +3,7 @@ package capston.new_valance.service;
 import capston.new_valance.dto.NewsSimpleDto;
 import capston.new_valance.dto.NewsStandResponseDto;
 import capston.new_valance.dto.VideoVersionDto;
-import capston.new_valance.dto.res.BannerResponseDto;
+import capston.new_valance.dto.res.BannerResponse;
 import capston.new_valance.model.NewsArticle;
 import capston.new_valance.repository.NewsArticleRepository;
 import capston.new_valance.repository.VideoVersionRepository;
@@ -64,7 +64,7 @@ public class NewsArticleService {
      * 임시 Banner API - 전체 뉴스 중 최신 3개를 조회하여
      * title, 썸네일, videoVersions(버전명, videoUrl 등 포함)를 반환합니다.
      */
-    public List<BannerResponseDto> getBanner() {
+    public List<BannerResponse> getBanner() {
         // 전체 뉴스 중 상위 3개 (출판일 내림차순, 동일 시 articleId 오름차순) 조회
         List<NewsArticle> articles = newsArticleRepository.findTop3ByOrderByPublishedAtDescArticleIdAsc();
 
@@ -79,7 +79,7 @@ public class NewsArticleService {
                             .build())
                     .collect(Collectors.toList());
 
-            return BannerResponseDto.builder()
+            return BannerResponse.builder()
                     .articleId(article.getArticleId())
                     .title(article.getTitle())
                     .thumbnailUrl(article.getThumbnailUrl())
