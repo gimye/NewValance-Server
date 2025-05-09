@@ -1,5 +1,6 @@
 package capston.new_valance.service;
 
+import capston.new_valance.dto.NewsSimpleDto;
 import capston.new_valance.dto.req.OnboardingRequest;
 import capston.new_valance.jwt.JwtUtil;
 import capston.new_valance.model.User;
@@ -8,7 +9,10 @@ import capston.new_valance.model.Tag;
 import capston.new_valance.repository.UserRepository;
 import capston.new_valance.repository.UserTopTagRepository;
 import capston.new_valance.repository.TagRepository;
+import capston.new_valance.repository.UserVideoInteractionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +31,7 @@ public class UserService {
     private final TagRepository tagRepository;
     private final JwtUtil jwtUtil;
     private final UserTopTagRepository userTopTagRepository;
+    private final UserVideoInteractionRepository interactionRepository;
 
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
@@ -93,6 +98,17 @@ public class UserService {
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    public Page<NewsSimpleDto> getLikedNews(Long userId, Pageable pageable) {
+        return interactionRepository
+                .findByUserIdAndLikedTrueOrderByWatchedAtDesc(userId, pageable)
+                .map(interaction -> NewsSimpleDto.builder()
+                        .articleId(interaction.getArticle().getArticleId())
+                        .title(interaction.getArticle().getTitle())
+                        .thumbnailUrl(interaction.getArticle().getThumbnailUrl())
+                        .build()
+                );
     }
 
 }

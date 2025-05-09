@@ -4,7 +4,9 @@ import capston.new_valance.dto.VideoVersionDto;
 import capston.new_valance.dto.TagDto;
 import capston.new_valance.dto.req.VideoMetadataRequest;
 import capston.new_valance.dto.res.VideoMetadataResponse;
-import capston.new_valance.model.*;
+import capston.new_valance.model.NewsArticle;
+import capston.new_valance.model.Tag;
+import capston.new_valance.model.VideoVersion;
 import capston.new_valance.repository.NewsArticleRepository;
 import capston.new_valance.repository.TagRepository;
 import capston.new_valance.repository.VideoVersionRepository;
@@ -24,8 +26,8 @@ public class VideoMetadataService {
     private final TagRepository tagRepo;
 
     public VideoMetadataResponse saveMetadata(VideoMetadataRequest req) {
-        LocalDateTime publishedAt = LocalDateTime.parse(req.getPublishedAt());
-        LocalDateTime createdAt = LocalDateTime.parse(req.getCreatedAt());
+        LocalDateTime publishedAt = parseDateTime(req.getPublishedAt());
+        LocalDateTime createdAt   = parseDateTime(req.getCreatedAt());
 
         // 1. 뉴스 기사 저장
         NewsArticle article = NewsArticle.builder()
@@ -65,7 +67,7 @@ public class VideoMetadataService {
 
         List<TagDto> tagDtos = tagSet.stream()
                 .map(tag -> TagDto.builder()
-                        .tagId(tag.getTagId())
+                        .tagId((long) tag.getTagId())
                         .tagName(tag.getTagName())
                         .build())
                 .toList();
@@ -80,5 +82,22 @@ public class VideoMetadataService {
                 .videoVersions(versionDtos)
                 .tags(tagDtos)
                 .build();
+    }
+
+    /** 문자열이 "yyyy-MM-dd'T'HH-mm-ss" 형식이면 HH,mm,ss 사이 구분자를 ':' 로 교체 후 파싱 */
+    private LocalDateTime parseDateTime(String raw) {
+        String normalized = normalizeTimeDelimiters(raw);
+        return LocalDateTime.parse(normalized); // ISO_LOCAL_DATE_TIME
+    }
+
+    private String normalizeTimeDelimiters(String raw) {
+        int t = raw.indexOf('T');
+        if (t > 0 && raw.length() >= t + 9) {
+            // datePart: "yyyy-MM-ddT" / timePart: "HH-mm-ss" → "HH:mm:ss"
+            String datePart = raw.substring(0, t + 1);
+            String timePart = raw.substring(t + 1).replace('-', ':');
+            return datePart + timePart;
+        }
+        return raw;
     }
 }

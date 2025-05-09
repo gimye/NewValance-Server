@@ -19,7 +19,6 @@ public class UserVideoInteraction {
 
     private Long userId;
 
-    /** ✔ 영상이 아닌 뉴스 기사로 전환 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id")
     private NewsArticle article;

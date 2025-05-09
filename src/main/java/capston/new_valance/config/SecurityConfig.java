@@ -29,6 +29,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import java.util.List;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -74,17 +76,35 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/**") // 오직 /api/** 경로에만 적용
+                .securityMatcher("/api/**")
                 .cors(cors -> cors.configurationSource(corsConfig()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth ->
-                        auth.anyRequest().permitAll()) // 인증 없이 접근 허용하거나, 필요시 JwtFilter로 인증 설정
-                .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 공개 API
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/login/**", "/api/ai/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+
+                // formLogin 완전 비활성화 (302 방지)
+                .formLogin(AbstractHttpConfigurer::disable)
+
+                // BasicAuth → 401 챌린지용으로 다시 켜주기
+                .httpBasic(withDefaults())
+
+                // JWT 필터
+                .addFilterBefore(new JwtFilter(jwtUtil),
+                        UsernamePasswordAuthenticationFilter.class)
+
+                // 인증 실패 시 401 리턴하도록 엔트리 포인트 지정
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+        ;
 
         return http.build();
     }
+
+
 
     // 나머지 웹(회원가입, OAuth2 로그인 등)에 대한 SecurityFilterChain
     @Bean
@@ -99,7 +119,7 @@ public class SecurityConfig {
                         auth.requestMatchers(
                                         "/actuator/**",
                                         "/api/login/**",
-                                        "/api/ai/**",
+                                        "/api/ai/metadata",
                                         "/oauth2/**",
                                         "/auth/refresh",
                                         "/custom-login",
@@ -125,6 +145,7 @@ public class SecurityConfig {
             // 허용 Origin 목록 확장
             config.setAllowedOrigins(List.of(
                     "http://localhost:3000",
+                    "http://localhost:8000",
                     "https://new-valance-server.o-r.kr",
                     "https://loadbalancer-799709838.ap-northeast-2.elb.amazonaws.com"
             ));

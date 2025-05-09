@@ -1,10 +1,17 @@
+// src/main/java/capston/new_valance/service/VideoService.java
 package capston.new_valance.service;
 
 import capston.new_valance.dto.NewsWithVideosDto;
 import capston.new_valance.dto.VideoVersionDto;
 import capston.new_valance.dto.res.VideoListResponse;
-import capston.new_valance.model.*;
-import capston.new_valance.repository.*;
+import capston.new_valance.model.NewsArticle;
+import capston.new_valance.model.NewsCategory;
+import capston.new_valance.model.UserTopTag;
+import capston.new_valance.model.UserVideoInteraction;
+import capston.new_valance.repository.NewsArticleRepository;
+import capston.new_valance.repository.UserTopTagRepository;
+import capston.new_valance.repository.UserVideoInteractionRepository;
+import capston.new_valance.repository.VideoVersionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,32 +29,38 @@ public class VideoService {
     private final UserTopTagRepository userTopTagRepository;
     private final UserVideoInteractionRepository userVideoInteractionRepository;
 
-    /* ------------------------------------------------------------------
-       1)  카테고리·추천 구분하여 영상 리스트를 가져오는 메인 엔드포인트
-           ✔ VideoController 가 호출하는 바로 그 시그니처
-    ------------------------------------------------------------------ */
+    /**
+     * 메인 엔드포인트: /api/video/{type} 및 /api/video/{type}/{newsId}
+     */
     public VideoListResponse getVideosByType(String type, Long newsId, Long userId) {
 
-        /* 추천 목록 */
+        // 1) 좋아요(type="likes")일 때
+        if ("likes".equalsIgnoreCase(type)) {
+            return getLikedVideos(userId, newsId);
+        }
+
+        // 2) 추천(type="recommend")일 때
         if ("recommend".equalsIgnoreCase(type)) {
             return getRecommendedVideos(userId, newsId);
         }
 
-        /* 일반 카테고리 */
+        // 3) 카테고리 또는 today
         Long categoryId = NewsCategory.fromType(type);
         if (categoryId == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid type");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "요청한 파라미터 형식이 올바르지 않습니다: " + type
+            );
         }
 
-        /* 첫 페이지 vs. 페이징 */
+        // 첫 페이지 vs. 페이징
         List<NewsArticle> articles = (newsId == null)
                 ? newsArticleRepository.findTop3ByCategoryIdOrderByPublishedAtDescArticleIdAsc(categoryId)
                 : newsArticleRepository.findNext3ByCategoryIdAndNewsId(categoryId, newsId);
 
-        List<NewsWithVideosDto> newsList = articles.stream()
+        // DTO 변환
+        List<NewsWithVideosDto> list = articles.stream()
                 .map(article -> {
-
-                    /* 영상 버전 리스트 */
                     List<VideoVersionDto> videoVersions = videoVersionRepository
                             .findByArticle_ArticleIdOrderByVersionNameAsc(article.getArticleId())
                             .stream()
@@ -57,12 +70,8 @@ public class VideoService {
                                     .build())
                             .collect(Collectors.toList());
 
-                    /* 좋아요 여부 (시청 기록 = ‘기사’ 기준으로 변경됨) */
-                    boolean liked = false;
-                    if (userId != null) {
-                        liked = userVideoInteractionRepository
-                                .existsByUserIdAndArticle_ArticleIdAndLikedTrue(userId, article.getArticleId());
-                    }
+                    boolean liked = userId != null && userVideoInteractionRepository
+                            .existsByUserIdAndArticle_ArticleIdAndLikedTrue(userId, article.getArticleId());
 
                     return NewsWithVideosDto.builder()
                             .newsId(article.getArticleId())
@@ -75,24 +84,77 @@ public class VideoService {
                 })
                 .collect(Collectors.toList());
 
-        /* 다음 페이지용 newsId 계산 */
-        Long nextNewsId = null;
+        // nextNewsId 계산
+        Long nextId = null;
         if (!articles.isEmpty()) {
-            Long lastId = articles.get(articles.size() - 1).getArticleId();
-            nextNewsId = newsArticleRepository.findNextNewsId(lastId, categoryId).orElse(null);
+            Long last = articles.get(articles.size() - 1).getArticleId();
+            nextId = newsArticleRepository.findNextNewsId(last, categoryId).orElse(null);
         }
 
         return VideoListResponse.builder()
-                .news(newsList)
-                .nextNewsId(nextNewsId)
+                .news(list)
+                .nextNewsId(nextId)
                 .build();
     }
 
-    /* ------------------------------------------------------------------
-       2)  ‘추천’ 로직  (앞서 수정한 기사-기준 시청 제외 버전)
-    ------------------------------------------------------------------ */
-    public VideoListResponse getRecommendedVideos(Long userId, Long newsId) {
+    /**
+     * 전체 좋아요한 뉴스를 시간 내림차순으로 조회 → newsId 기준 무한 스크롤(3개씩)
+     */
+    private VideoListResponse getLikedVideos(Long userId, Long newsId) {
+        List<UserVideoInteraction> likedAll = userVideoInteractionRepository
+                .findByUserIdAndLikedTrueOrderByWatchedAtDesc(userId);
 
+        int start = 0;
+        if (newsId != null) {
+            for (int i = 0; i < likedAll.size(); i++) {
+                if (Objects.equals(likedAll.get(i).getArticle().getArticleId(), newsId)) {
+                    start = i + 1;
+                    break;
+                }
+            }
+        }
+
+        List<UserVideoInteraction> page = likedAll.stream()
+                .skip(start)
+                .limit(3)
+                .collect(Collectors.toList());
+
+        List<NewsWithVideosDto> dtos = page.stream().map(inter -> {
+            var a = inter.getArticle();
+            List<VideoVersionDto> versions = videoVersionRepository
+                    .findByArticle_ArticleIdOrderByVersionNameAsc(a.getArticleId())
+                    .stream()
+                    .map(v -> VideoVersionDto.builder()
+                            .versionName(v.getVersionName())
+                            .videoUrl(v.getVideoUrl())
+                            .build())
+                    .collect(Collectors.toList());
+
+            return NewsWithVideosDto.builder()
+                    .newsId(a.getArticleId())
+                    .title(a.getTitle())
+                    .originalUrl(a.getOriginalUrl())
+                    .thumbnailUrl(a.getThumbnailUrl())
+                    .videoVersions(versions)
+                    .liked(true)
+                    .build();
+        }).collect(Collectors.toList());
+
+        Long nextId = null;
+        if (start + page.size() < likedAll.size()) {
+            nextId = likedAll.get(start + page.size()).getArticle().getArticleId();
+        }
+
+        return VideoListResponse.builder()
+                .news(dtos)
+                .nextNewsId(nextId)
+                .build();
+    }
+
+    /**
+     * 추천 로직
+     */
+    public VideoListResponse getRecommendedVideos(Long userId, Long newsId) {
         List<UserTopTag> topTags = userTopTagRepository.findTop5ByUserIdOrderByWeightDesc(userId);
         if (topTags.isEmpty()) {
             return VideoListResponse.builder().news(List.of()).nextNewsId(null).build();
@@ -102,22 +164,17 @@ public class VideoService {
                 .map(UserTopTag::getTagId)
                 .toList();
 
-        /* 태그 기반 후보 100개 */
-        List<NewsArticle> candidates =
-                newsArticleRepository.findRecommendedArticlesByTagIds(tagIds, 100);
+        List<NewsArticle> candidates = newsArticleRepository.findRecommendedArticlesByTagIds(tagIds, 100);
 
-        /* 최근 본 ‘기사’ 100개는 제외 */
-        Set<Long> watchedArticleIds =
-                userVideoInteractionRepository.findTop100ByUserIdOrderByWatchedAtDesc(userId)
-                        .stream()
-                        .map(uv -> uv.getArticle().getArticleId())
-                        .collect(Collectors.toSet());
+        Set<Long> watched = userVideoInteractionRepository.findTop100ByUserIdOrderByWatchedAtDesc(userId)
+                .stream()
+                .map(uv -> uv.getArticle().getArticleId())
+                .collect(Collectors.toSet());
 
         candidates = candidates.stream()
-                .filter(a -> !watchedArticleIds.contains(a.getArticleId()))
+                .filter(a -> !watched.contains(a.getArticleId()))
                 .toList();
 
-        /* 무한 스크롤: newsId 이후부터 가져오기 */
         if (newsId != null) {
             candidates = candidates.stream()
                     .dropWhile(a -> !Objects.equals(a.getArticleId(), newsId))
@@ -125,17 +182,14 @@ public class VideoService {
                     .toList();
         }
 
-        List<NewsArticle> recommended = candidates.stream()
-                .limit(3)
-                .toList();
+        List<NewsArticle> recommended = candidates.stream().limit(3).toList();
 
-        Long nextNewsId = null;
+        Long nextId = null;
         if (recommended.size() == 3 && candidates.size() > 3) {
-            nextNewsId = candidates.get(3).getArticleId();
+            nextId = candidates.get(3).getArticleId();
         }
 
-        /* DTO 변환 */
-        List<NewsWithVideosDto> newsDtos = recommended.stream()
+        List<NewsWithVideosDto> dtos = recommended.stream()
                 .map(article -> {
                     List<VideoVersionDto> versions = videoVersionRepository
                             .findByArticle_ArticleIdOrderByVersionNameAsc(article.getArticleId())
@@ -161,8 +215,8 @@ public class VideoService {
                 .toList();
 
         return VideoListResponse.builder()
-                .news(newsDtos)
-                .nextNewsId(nextNewsId)
+                .news(dtos)
+                .nextNewsId(nextId)
                 .build();
     }
 }
