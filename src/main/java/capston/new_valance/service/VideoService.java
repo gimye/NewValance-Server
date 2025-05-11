@@ -117,7 +117,7 @@ public class VideoService {
         List<Long> articleIds = todayVersions.stream()
                 .map(v -> v.getArticle().getArticleId())
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         int startIdx = 0;
         if (newsId != null && articleIds.contains(newsId)) {
@@ -127,7 +127,7 @@ public class VideoService {
         List<Long> pageIds = articleIds.stream()
                 .skip(startIdx)
                 .limit(3)
-                .collect(Collectors.toList());
+                .toList();
 
         List<NewsWithVideosDto> list = pageIds.stream()
                 .map(id -> {
@@ -187,7 +187,7 @@ public class VideoService {
         List<UserVideoInteraction> page = likedAll.stream()
                 .skip(start)
                 .limit(3)
-                .collect(Collectors.toList());
+                .toList();
 
         List<NewsWithVideosDto> dtos = page.stream().map(inter -> {
             var a = inter.getArticle();
@@ -242,7 +242,7 @@ public class VideoService {
 
         List<NewsArticle> filtered = candidates.stream()
                 .filter(a -> !watched.contains(a.getArticleId()))
-                .collect(Collectors.toList());
+                .toList();
 
         int start = 0;
         if (newsId != null) {
@@ -257,7 +257,7 @@ public class VideoService {
         List<NewsArticle> page = filtered.stream()
                 .skip(start)
                 .limit(3)
-                .collect(Collectors.toList());
+                .toList();
 
         Long nextId = null;
         if (start + page.size() < filtered.size()) {

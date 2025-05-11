@@ -32,7 +32,6 @@ public class S3Uploader {
 
         amazonS3.putObject(bucket, key, file.getInputStream(), meta);
 
-        String url = amazonS3.getUrl(bucket, key).toString();
-        return url;
+        return amazonS3.getUrl(bucket, key).toString();
     }
 }

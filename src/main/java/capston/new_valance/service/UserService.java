@@ -1,7 +1,6 @@
 package capston.new_valance.service;
 
 import capston.new_valance.dto.NewsSimpleDto;
-import capston.new_valance.dto.req.OnboardingRequest;
 import capston.new_valance.jwt.JwtUtil;
 import capston.new_valance.model.User;
 import capston.new_valance.model.UserTopTag;

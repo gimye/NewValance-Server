@@ -5,9 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
-
 public interface TagRepository extends JpaRepository<Tag, Integer> {
 
     // 태그 이름으로 태그 조회

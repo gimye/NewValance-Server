@@ -6,7 +6,6 @@ import capston.new_valance.dto.NewsWithVideosDto;
 import capston.new_valance.dto.VideoVersionDto;
 import capston.new_valance.dto.res.SearchResponse;
 import capston.new_valance.model.NewsArticle;
-import capston.new_valance.model.VideoVersion;
 import capston.new_valance.repository.NewsArticleRepository;
 import capston.new_valance.repository.UserVideoInteractionRepository;
 import capston.new_valance.repository.VideoVersionRepository;
