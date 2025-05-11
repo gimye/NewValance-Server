@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "uservideointeractions")
@@ -25,12 +26,14 @@ public class UserVideoInteraction {
 
     private LocalDateTime watchedAt;
     private int watchDuration;
+    @Getter
     private boolean liked;
 
-    public static UserVideoInteraction ofNewInteraction(Long userId, NewsArticle article) {
+
+    public static UserVideoInteraction ofNewInteraction(Long uid, NewsArticle art) {
         return UserVideoInteraction.builder()
-                .userId(userId)
-                .article(article)
+                .userId(uid)
+                .article(art)
                 .watchedAt(LocalDateTime.now())
                 .watchDuration(0)
                 .liked(false)
@@ -41,7 +44,6 @@ public class UserVideoInteraction {
         return this.article != null && this.article.getArticleId().equals(articleId);
     }
 
-    public boolean isLiked() { return liked; }
     public UserVideoInteraction markLiked()   { return this.toBuilder().liked(true).build(); }
     public UserVideoInteraction unmarkLiked() { return this.toBuilder().liked(false).build(); }
 }

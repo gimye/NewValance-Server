@@ -5,9 +5,12 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 
-@Builder
 @Getter
+@Builder
 public class SearchResponse {
-    private List<NewsSimpleDto> articles;
+
+    /**  key = 카테고리 이름, value = 해당 카테고리의 기사 목록  */
+    private Map<String, List<NewsSimpleDto>> articlesByCategory;
 }

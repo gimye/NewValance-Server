@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/service/SearchService.java
 package capston.new_valance.service;
 
 import capston.new_valance.dto.NewsSimpleDto;
@@ -6,6 +5,7 @@ import capston.new_valance.dto.NewsWithVideosDto;
 import capston.new_valance.dto.VideoVersionDto;
 import capston.new_valance.dto.res.SearchResponse;
 import capston.new_valance.model.NewsArticle;
+import capston.new_valance.model.NewsCategory;
 import capston.new_valance.repository.NewsArticleRepository;
 import capston.new_valance.repository.UserVideoInteractionRepository;
 import capston.new_valance.repository.VideoVersionRepository;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,21 +29,36 @@ public class SearchService {
     //제목에 query가 포함된 뉴스들을 최신순으로 NewsSimpleDto 리스트 반환
     @Transactional(readOnly = true)
     public SearchResponse searchByTitle(String query) {
-        List<NewsArticle> articles = newsArticleRepository
-                .findByTitleContainingIgnoreCaseOrderByPublishedAtDesc(query);
 
-        List<NewsSimpleDto> dtos = articles.stream()
-                .map(a -> NewsSimpleDto.builder()
-                        .articleId(a.getArticleId())
-                        .title(a.getTitle())
-                        .thumbnailUrl(a.getThumbnailUrl())
-                        .build())
-                .collect(Collectors.toList());
+        List<NewsArticle> articles =
+                newsArticleRepository.findByTitleContainingIgnoreCaseOrderByPublishedAtDesc(query);
+
+        final Map<Long, String> ID_TO_NAME =
+                Arrays.stream(NewsCategory.values())
+                        .collect(Collectors.toMap(NewsCategory::getId, NewsCategory::getKoreanName));
+
+        Map<String, List<NewsSimpleDto>> grouped = new LinkedHashMap<>();
+
+        for (NewsArticle a : articles) {
+
+            // ➋ 숫자 id → 한글 카테고리명
+            String categoryName = ID_TO_NAME.getOrDefault(a.getCategoryId(), "기타");
+
+            grouped.computeIfAbsent(categoryName, k -> new ArrayList<>())
+                    .add(
+                            NewsSimpleDto.builder()
+                                    .articleId(a.getArticleId())
+                                    .title(a.getTitle())
+                                    .thumbnailUrl(a.getThumbnailUrl())
+                                    .build()
+                    );
+        }
 
         return SearchResponse.builder()
-                .articles(dtos)
+                .articlesByCategory(grouped)
                 .build();
     }
+
 
     // 단일 articleId에 대한 전체 VideoVersionDto 목록 + liked 여부 반환
     @Transactional(readOnly = true)

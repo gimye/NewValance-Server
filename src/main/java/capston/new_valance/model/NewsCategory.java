@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.util.Map;
 
+@Getter
 public enum NewsCategory {
     POLITICS(1L, "정치", "politics"),
     ECONOMY(2L, "경제", "economy"),

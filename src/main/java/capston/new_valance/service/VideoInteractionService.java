@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -18,28 +19,33 @@ public class VideoInteractionService {
     private final UserVideoInteractionRepository interactionRepo;
     private final NewsArticleRepository articleRepo;
 
-    // 뉴스 기사 단위 시청 완료 처리
+    /**
+     * 뉴스 영상 시청 완료 처리
+     * - 한국(Asia/Seoul) 기준 현재 시각으로 watchedAt 저장
+     */
     @Transactional
     public int handleArticleComplete(Long userId, Long articleId) {
-
         NewsArticle article = articleRepo.findById(articleId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 뉴스가 존재하지 않습니다."));
 
-        /* 이미 본 기사면 저장 스킵 */
+        // 이미 본 영상은 건너뛰기
         if (interactionRepo.existsByUserIdAndArticle_ArticleId(userId, articleId)) {
             return getTodayViewCount(userId);
         }
 
-        /* 새 시청 기록 저장 */
+        // 새로운 시청 기록 저장
         interactionRepo.save(UserVideoInteraction.ofNewInteraction(userId, article));
         return getTodayViewCount(userId);
     }
 
-    // 오늘(00:00~24:00) 시청한 기사 수
+    /**
+     * 오늘(Asia/Seoul 00:00~익일 00:00) 시청한 영상 수 조회
+     */
     @Transactional(readOnly = true)
     public int getTodayViewCount(Long userId) {
-        LocalDateTime start = LocalDate.now().atStartOfDay();  // 오늘 00:00
-        LocalDateTime end   = start.plusDays(1);               // 내일 00:00
+        LocalDate todaySeoul = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime start = todaySeoul.atStartOfDay();
+        LocalDateTime end   = todaySeoul.plusDays(1).atStartOfDay();
 
         return interactionRepo.countByUserIdAndWatchedAtBetween(userId, start, end);
     }
