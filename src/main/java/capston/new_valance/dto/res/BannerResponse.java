@@ -1,4 +1,3 @@
-// BannerResponseDto.java
 package capston.new_valance.dto.res;
 
 import capston.new_valance.dto.VideoVersionDto;

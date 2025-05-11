@@ -53,6 +53,7 @@ public class UserService {
         userRepository.save(updatedUser);
     }
 
+    @Transactional(readOnly = true)
     public boolean isUsernameAvailable(String username) {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 사용자 이름입니다: " + username);
@@ -88,6 +89,7 @@ public class UserService {
     }
 
     // 사용자 선호 태그 목록을 반환하는 메서드
+    @Transactional(readOnly = true)
     public List<String> getUserPreferredTags(Long userId) {
         List<UserTopTag> userTopTags = userTopTagRepository.findByUserId(userId);
         return userTopTags.stream()
@@ -100,6 +102,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Page<NewsSimpleDto> getLikedNews(Long userId, Pageable pageable) {
         return interactionRepository
                 .findByUserIdAndLikedTrueOrderByWatchedAtDesc(userId, pageable)

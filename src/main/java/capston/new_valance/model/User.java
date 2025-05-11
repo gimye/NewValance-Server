@@ -1,6 +1,5 @@
 package capston.new_valance.model;
 
-import capston.new_valance.oauth2.OAuth2Response;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -46,14 +45,10 @@ public class User {
     @Column(nullable = false, name = "login_provider")
     private LoginProvider loginProvider;
 
-
-
-    // 빌더 생성 메서드 (필수 필드 강제)
     public static User.UserBuilder builder(String email, LoginProvider loginProvider) {
         return new User.UserBuilder()
                 .email(email)
                 .loginProvider(loginProvider);
     }
 
-    // 기존 static factory method 제거 → 빌더 패턴으로 대체
 }

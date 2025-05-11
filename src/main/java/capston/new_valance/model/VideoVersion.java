@@ -3,7 +3,6 @@ package capston.new_valance.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
 @Entity

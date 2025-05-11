@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/config/AwsS3Config.java
 package capston.new_valance.config;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;

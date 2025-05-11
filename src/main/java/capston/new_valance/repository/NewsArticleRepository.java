@@ -24,7 +24,7 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
     // banner를 위한 임시 메서드
     List<NewsArticle> findTop3ByOrderByPublishedAtDescArticleIdAsc();
 
-    // === 영상 API 전용 ===
+    /* === 영상 API 전용 === */
 
     // newsId 없이 카테고리의 최신 뉴스 3개 조회 (publishedAt 내림차순, 동일 시 articleId 오름차순)
     // (메서드명만으로 조회 제한이 작동하도록 @Query 없이 작성)
@@ -32,7 +32,6 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
 
     // newsId가 주어졌을 때, 기준 뉴스 이후 조건에 부합하는 3개 뉴스 조회
     // 조건: 기준 뉴스의 publishedAt 보다 이전이거나, publishedAt이 동일하면 articleId가 큰 뉴스
-    // native query를 사용하여 LIMIT 3을 직접 적용함
     @Query(value = "SELECT * FROM newsarticles n " +
             "WHERE n.category_id = :categoryId " +
             "AND ( n.published_at < (SELECT published_at FROM newsarticles WHERE article_id = :newsId) " +
@@ -44,7 +43,6 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
 
 
     // 다음 뉴스 id 조회 (현재 응답 뉴스의 마지막 뉴스 이후에 해당하는 뉴스가 있으면 그 articleId 반환)
-    // native query를 사용하여 한 건만 반환(LIMIT 1)하도록 함
     @Query(value = "SELECT n.article_id FROM newsarticles n " +
             "WHERE n.category_id = :categoryId " +
             "AND ( n.published_at < (SELECT published_at FROM newsarticles WHERE article_id = :currentId) " +
@@ -67,5 +65,6 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, Long> 
             @Param("tagIds") List<Integer> tagIds,
             @Param("limit") int limit
     );
+    List<NewsArticle> findByTitleContainingIgnoreCaseOrderByPublishedAtDesc(String title);
 
 }

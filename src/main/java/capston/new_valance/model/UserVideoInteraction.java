@@ -27,7 +27,6 @@ public class UserVideoInteraction {
     private int watchDuration;
     private boolean liked;
 
-    /* --------- 팩토리 메서드 --------- */
     public static UserVideoInteraction ofNewInteraction(Long userId, NewsArticle article) {
         return UserVideoInteraction.builder()
                 .userId(userId)
@@ -38,7 +37,6 @@ public class UserVideoInteraction {
                 .build();
     }
 
-    /* --------- 유틸 --------- */
     public boolean isSameArticle(Long articleId) {
         return this.article != null && this.article.getArticleId().equals(articleId);
     }

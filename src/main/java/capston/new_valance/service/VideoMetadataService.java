@@ -12,6 +12,7 @@ import capston.new_valance.repository.TagRepository;
 import capston.new_valance.repository.VideoVersionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +26,7 @@ public class VideoMetadataService {
     private final VideoVersionRepository videoRepo;
     private final TagRepository tagRepo;
 
+    @Transactional
     public VideoMetadataResponse saveMetadata(VideoMetadataRequest req) {
         LocalDateTime publishedAt = parseDateTime(req.getPublishedAt());
         LocalDateTime createdAt   = parseDateTime(req.getCreatedAt());
@@ -85,6 +87,7 @@ public class VideoMetadataService {
     }
 
     /** 문자열이 "yyyy-MM-dd'T'HH-mm-ss" 형식이면 HH,mm,ss 사이 구분자를 ':' 로 교체 후 파싱 */
+
     private LocalDateTime parseDateTime(String raw) {
         String normalized = normalizeTimeDelimiters(raw);
         return LocalDateTime.parse(normalized); // ISO_LOCAL_DATE_TIME

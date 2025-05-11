@@ -20,19 +20,19 @@ public class NewsArticleController {
 
     private final NewsArticleService newsService;
 
-    // 홈 가판대 API - 카테고리별 최신 뉴스 10개씩 반환
+    // 1. 홈 가판대 - 카테고리별 최신 뉴스 10개씩 반환 GET /api/news/home
     @GetMapping("/home")
     public ResponseEntity<List<NewsStandResponseDto>> getNewsStand() {
         return ResponseEntity.ok(newsService.getNewsStand());
     }
 
-    // 홈 배너 API - (임시) 랜덤 3개의
+    // 2. 홈 배너 API GET /api/news/banner
     @GetMapping("/banner")
     public ResponseEntity<List<BannerResponse>> getBanner() {
         return ResponseEntity.ok(newsService.getBanner());
     }
 
-    // 카테고리별 뉴스 조회 API (페이징 적용)
+    // 3. 카테고리별 뉴스 조회 API GET /api/news/category/{categoryId}
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<PagedModel<NewsSimpleDto>> getNewsByCategory(
             @PathVariable("categoryId") Long categoryId,

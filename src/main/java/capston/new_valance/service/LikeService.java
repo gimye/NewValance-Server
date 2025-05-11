@@ -17,6 +17,7 @@ public class LikeService {
     private final TagRepository tagRepository;
     private final UserTopTagRepository userTopTagRepository;
 
+    // 좋아요 처리
     @Transactional
     public boolean toggleLike(Long articleId, Long userId) {
 

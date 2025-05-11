@@ -16,6 +16,7 @@ public class VideoInteractionController {
 
     private final VideoInteractionService interactionService;
 
+    // 1. 영상 시청완료 POST /api/video/{articleId}/complete
     @PostMapping("/{articleId}/complete")
     public ResponseEntity<?> completeArticleVideo(
             @PathVariable("articleId") Long articleId,

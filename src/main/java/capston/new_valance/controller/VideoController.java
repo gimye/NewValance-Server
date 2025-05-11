@@ -15,7 +15,7 @@ public class VideoController {
 
     private final VideoService videoService;
 
-    // /api/video/{type}
+    // 1. 타입별 영상 재생 /api/video/{type}
     @GetMapping("/{type}")
     public ResponseEntity<VideoListResponse> getVideosByType(
             @PathVariable("type") String type,
@@ -30,7 +30,7 @@ public class VideoController {
         }
     }
 
-    // /api/video/{type}/{newsId}
+    // 타입, 뉴스 id 별 영상 재생 /api/video/{type}/{newsId}
     @GetMapping("/{type}/{newsId}")
     public ResponseEntity<VideoListResponse> getVideosByTypeAndNewsId(
             @PathVariable("type") String type,

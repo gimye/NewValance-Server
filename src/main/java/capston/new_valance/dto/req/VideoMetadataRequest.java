@@ -12,5 +12,5 @@ public class VideoMetadataRequest {
     private String easyVersionUrl;
     private String normalVersionUrl;
     private String thumbnailUrl;
-    private String tags; // 예: "국회,대통령,진보,보수"
+    private String tags;
 }

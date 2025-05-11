@@ -42,7 +42,7 @@ public class SecurityConfig {
     private final CustomSuccessHandler customSuccessHandler;
     private final CustomFailHandler customFailHandler;
     private final ClientRegistrationRepository clientRegistrationRepository;
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint; // ✅ 추가
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
 
     @Bean
@@ -149,7 +149,7 @@ public class SecurityConfig {
                     "https://new-valance-server.o-r.kr",
                     "https://loadbalancer-799709838.ap-northeast-2.elb.amazonaws.com"
             ));
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // OPTIONS 필수
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
             config.setAllowedHeaders(List.of("*"));
             config.setExposedHeaders(List.of("Authorization"));
             config.setAllowCredentials(true);

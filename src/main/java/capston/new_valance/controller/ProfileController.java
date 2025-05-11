@@ -24,9 +24,8 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    /* ================================
-       0) 조회: GET /api/profile
-       ================================ */
+
+    // 1. 프로필 조회 GET /api/profile
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ProfileResponse> getProfile(
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -34,9 +33,7 @@ public class ProfileController {
         return ResponseEntity.ok(profile);
     }
 
-    /* ================================
-       1) 수정: PATCH /api/profile
-       ================================ */
+    // 2. 프로필 수정 PATCH /api/profile
     @PatchMapping(
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -57,7 +54,7 @@ public class ProfileController {
             );
         }
 
-        // 2) 빌더로 DTO 조립
+        // 2) 빌더로 DTO 빌드
         ProfilePatchRequest req = ProfilePatchRequest.builder()
                 .username(username)
                 .profileImage(profileImage)
@@ -68,9 +65,8 @@ public class ProfileController {
         return ResponseEntity.ok(updated);
     }
 
-    /* ================================
-       2) 주간 조회: GET /api/profile/week
-       ================================ */
+
+    // 3. 주간 조회 GET /api/profile/week
     @GetMapping("/week")
     public ResponseEntity<List<List<DailyWatchCountResponse>>> getWeeklyWatchCounts(
             @AuthenticationPrincipal UserPrincipal principal) {

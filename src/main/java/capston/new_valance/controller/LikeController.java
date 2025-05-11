@@ -16,6 +16,7 @@ public class LikeController {
 
     private final LikeService likeService;
 
+    // 1. 좋아요, 좋아요 취소 POST /api/video/{newsId}/like
     @PostMapping("/{newsId}/like")
     public ResponseEntity<?> toggleLike(@PathVariable("newsId") Long newsId,
                                         @AuthenticationPrincipal UserPrincipal userPrincipal) {

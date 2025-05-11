@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,11 +23,9 @@ public class NewsArticleService {
     private final NewsArticleRepository newsArticleRepository;
     private final VideoVersionRepository videoVersionRepository;
 
-    /**
-     * 카테고리별 뉴스 조회 (페이지네이션 적용)
-     */
+    // 카테고리별 뉴스 조회
+    @Transactional(readOnly = true)
     public Page<NewsSimpleDto> getNewsByCategory(Long categoryId, Pageable pageable) {
-        // 페이지네이션과 정렬은 service 또는 Repository에서 처리합니다.
         Page<NewsArticle> page = newsArticleRepository.findByCategoryId(categoryId, pageable);
         return page.map(this::toSimpleDto);
     }
@@ -60,16 +59,13 @@ public class NewsArticleService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 임시 Banner API - 전체 뉴스 중 최신 3개를 조회하여
-     * title, 썸네일, videoVersions(버전명, videoUrl 등 포함)를 반환합니다.
-     */
+    // 전체 뉴스 중 최신 3개 반환
+    @Transactional(readOnly = true)
     public List<BannerResponse> getBanner() {
         // 전체 뉴스 중 상위 3개 (출판일 내림차순, 동일 시 articleId 오름차순) 조회
         List<NewsArticle> articles = newsArticleRepository.findTop3ByOrderByPublishedAtDescArticleIdAsc();
 
         return articles.stream().map(article -> {
-            // 각 뉴스에 해당하는 영상 버전 정보 조회 (정렬 조건은 필요에 따라 결정)
             List<VideoVersionDto> videoVersions = videoVersionRepository
                     .findByArticle_ArticleIdOrderByVersionNameAsc(article.getArticleId())
                     .stream()

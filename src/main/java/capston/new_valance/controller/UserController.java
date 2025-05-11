@@ -25,6 +25,7 @@ public class UserController {
 
     private final UserService userService;
 
+    // 1. 온보딩 PATCH /api/user/onboarding
     @PatchMapping("/onboarding")
     public ResponseEntity<String> updateUsernameAndTags(
             @RequestHeader("Authorization") String accessToken,
@@ -41,6 +42,7 @@ public class UserController {
         return ResponseEntity.ok("Username and Tags updated successfully.");
     }
 
+    // 2. 닉네임 중복확인 /api/user/check-username
     @PostMapping("/check-username")
     public ResponseEntity<UsernameCheckResponse> checkUsernameDuplicate(
             @Valid @RequestBody UsernameValidationRequest request
@@ -49,6 +51,7 @@ public class UserController {
         return ResponseEntity.ok(new UsernameCheckResponse(isAvailable));
     }
 
+    // 3. 좋아요 뉴스 영상 반환 GET /api/user/liked
     @GetMapping("/liked")
     public ResponseEntity<Map<String, Object>> getLikedNews(
             @AuthenticationPrincipal UserPrincipal userPrincipal,

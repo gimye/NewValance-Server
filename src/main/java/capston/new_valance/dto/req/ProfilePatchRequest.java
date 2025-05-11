@@ -1,12 +1,12 @@
 package capston.new_valance.dto.req;
 
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
-@Getter
+@Data
 @Builder
 public class ProfilePatchRequest {
-    private final String username;
-    private final MultipartFile profileImage;
+    private String username;
+    private MultipartFile profileImage;
 }

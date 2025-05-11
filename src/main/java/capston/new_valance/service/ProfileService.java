@@ -36,16 +36,12 @@ public class ProfileService {
     private final TagRepository tagRepository;
     private final S3Uploader s3Uploader;
 
-    /* ===================================================================
-       1) 조회: GET /api/profile
-       =================================================================== */
+    // 프로필 조회
     public ProfileResponse getProfile(Long userId) {
         return buildProfileResponse(userId);
     }
 
-    /* ===================================================================
-       2) 수정: PATCH /api/profile  (username · profileImage)
-       =================================================================== */
+    // 프로필 수정
     @Transactional
     public ProfileResponse updateProfile(Long userId, ProfilePatchRequest req) {
 
@@ -53,7 +49,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ResponseStatusException(
                         NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
-        /* 2-1) username 변경 (중복 체크) */
+        // 사용자 이름 중복확인
         if (req.getUsername() != null && !req.getUsername().equals(user.getUsername())) {
             userRepository.findByUsername(req.getUsername()).ifPresent(u -> {
                 throw new ResponseStatusException(
@@ -62,7 +58,7 @@ public class ProfileService {
             user = user.toBuilder().username(req.getUsername()).build();
         }
 
-        /* 2-2) 프로필 이미지 업로드 → S3 URL 저장 */
+        // S3에 이미지 업로드
         if (req.getProfileImage() != null && !req.getProfileImage().isEmpty()) {
 
             if (!req.getProfileImage().getContentType().startsWith("image/")) {
@@ -81,19 +77,17 @@ public class ProfileService {
 
         userRepository.save(user);
 
-        /* 변경 완료 후 최신 프로필 반환 */
+        // 변경 완료 후 최신 프로필 반환
         return buildProfileResponse(userId);
     }
 
-    /* ===================================================================
-       3) 공통 빌더: 실제 ProfileResponse 생성 로직
-       =================================================================== */
+    // profile response 생성 메서드
     private ProfileResponse buildProfileResponse(Long userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        /* ── 오늘/총 시청 횟수 계산 ─────────────────────────────── */
+        // 오늘&총 시청 횟수 계산
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1);
 
@@ -102,7 +96,7 @@ public class ProfileService {
 
         long totalViews = interactionRepository.countByUserId(userId);
 
-        /* ── 선호 키워드 Top-5 구성 ─────────────────────────────── */
+        // 선호 키워드 Top-5 구성
         List<PreferredKeywordsDto> preferredKeywords =
                 userTopTagRepository.findTop5ByUserIdOrderByWeightDesc(userId)
                         .stream()
@@ -115,7 +109,6 @@ public class ProfileService {
                         })
                         .collect(Collectors.toList());
 
-        /* ── DTO 조립 후 반환 ──────────────────────────────────── */
         return ProfileResponse.builder()
                 .username(user.getUsername())
                 .profileImgUrl(user.getProfilePictureUrl())
@@ -125,11 +118,11 @@ public class ProfileService {
                 .build();
     }
 
+    // 최근 5주간 시청 기록 리스트 반환
     @Transactional(readOnly = true)
     public List<List<DailyWatchCountResponse>> getWeeklyWatchCounts(Long userId) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
-        // 1) 5주치(각 7일) 모두 채워둔 뒤
         List<List<DailyWatchCountResponse>> allWeeks = new ArrayList<>(5);
         for (int week = 0; week < 5; week++) {
             List<DailyWatchCountResponse> weekCounts = new ArrayList<>(7);
@@ -148,14 +141,8 @@ public class ProfileService {
             }
             allWeeks.add(weekCounts);
         }
-
-        // 2) “값(value) > 0”인 주(week)만 남기기
-        List<List<DailyWatchCountResponse>> filtered = allWeeks.stream()
-                .filter(week -> week.stream().anyMatch(d -> d.getValue() > 0))
-                .collect(Collectors.toList());
-
-        // 3) 아예 기록이 없으면 빈 배열 반환
-        return filtered;
+        return allWeeks;
     }
+
 
 }

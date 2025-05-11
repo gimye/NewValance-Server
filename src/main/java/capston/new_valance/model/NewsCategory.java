@@ -23,7 +23,6 @@ public enum NewsCategory {
         this.typeName = typeName;
     }
 
-    // URL에 들어온 영문 type을 내부 categoryId로 변환 (대소문자 무시)
     public static Long fromType(String type) {
         Map<String, Long> mapping = Map.of(
                 "politics", 1L,

@@ -6,11 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    // 공급자까지 포함한 조회 메서드
+
+    // email, login provider로 사용자 조회
     Optional<User> findByEmailAndLoginProvider(String email, LoginProvider loginProvider);
 
-    // 이메일만으로 조회 (중복 체크에 사용)
+    // email로 사용자 조회
     Optional<User> findByEmail(String email);
 
+    // username으로 사용자 조회
     Optional<User> findByUsername(String username);
 }

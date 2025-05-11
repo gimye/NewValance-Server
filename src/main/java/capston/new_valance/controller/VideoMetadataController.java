@@ -14,6 +14,7 @@ public class VideoMetadataController {
 
     private final VideoMetadataService videoMetadataService;
 
+    // 1. 영상 메타데이터 저장 POST /api/ai/metadata
     @PostMapping("/metadata")
     public ResponseEntity<VideoMetadataResponse> uploadMetadata(@RequestBody VideoMetadataRequest request) {
         VideoMetadataResponse response = videoMetadataService.saveMetadata(request);

@@ -6,6 +6,7 @@ import capston.new_valance.repository.NewsArticleRepository;
 import capston.new_valance.repository.UserVideoInteractionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,7 +18,8 @@ public class VideoInteractionService {
     private final UserVideoInteractionRepository interactionRepo;
     private final NewsArticleRepository articleRepo;
 
-    /** 뉴스 기사 단위 시청 완료 처리 */
+    // 뉴스 기사 단위 시청 완료 처리
+    @Transactional
     public int handleArticleComplete(Long userId, Long articleId) {
 
         NewsArticle article = articleRepo.findById(articleId)
@@ -33,7 +35,8 @@ public class VideoInteractionService {
         return getTodayViewCount(userId);
     }
 
-    /** 오늘(00:00~24:00) 시청한 기사 수 */
+    // 오늘(00:00~24:00) 시청한 기사 수
+    @Transactional(readOnly = true)
     public int getTodayViewCount(Long userId) {
         LocalDateTime start = LocalDate.now().atStartOfDay();  // 오늘 00:00
         LocalDateTime end   = start.plusDays(1);               // 내일 00:00
