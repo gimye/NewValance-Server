@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/model/Comment.java
 package capston.new_valance.model;
 
 import jakarta.persistence.*;
@@ -21,7 +20,6 @@ public class Comment {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    // video_id → article_id 로 변경
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", referencedColumnName = "article_id")
     private NewsArticle article;

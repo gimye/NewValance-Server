@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -23,7 +24,8 @@ public class CommentService {
     private final NewsArticleRepository articleRepository;
     private final UserRepository userRepository;
 
-    /** 댓글 목록 조회 */
+    // 댓글 목록 조회
+    @Transactional(readOnly = true)
     public Page<CommentDto> listComments(Long articleId, Pageable pageable, Long currentUserId) {
         articleRepository.findById(articleId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -44,7 +46,8 @@ public class CommentService {
         });
     }
 
-    /** 댓글 작성 */
+    // 댓글 작성
+    @Transactional
     public CommentDto createComment(Long articleId, Long userId, CreateCommentRequest req) {
         NewsArticle article = articleRepository.findById(articleId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -72,7 +75,8 @@ public class CommentService {
                 .build();
     }
 
-    /** 댓글 삭제 */
+    // 댓글 삭제
+    @Transactional
     public void deleteComment(Long articleId, Long commentId, Long userId) {
         Comment c = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResponseStatusException(

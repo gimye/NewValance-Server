@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/dto/CommentDto.java
 package capston.new_valance.dto;
 
 import lombok.Builder;

@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/dto/req/CreateCommentRequest.java
 package capston.new_valance.dto.req;
 
 import jakarta.validation.constraints.NotBlank;

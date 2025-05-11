@@ -1,4 +1,3 @@
-// src/main/java/capston/new_valance/controller/CommentController.java
 package capston.new_valance.controller;
 
 import capston.new_valance.dto.CommentDto;
@@ -21,7 +20,8 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    /** 댓글 목록 조회 */
+    // 1. 댓글 목록 조회 GET /api/comments/{articleId}
+
     @GetMapping("/{articleId}")
     public ResponseEntity<Map<String,Object>> list(
             @AuthenticationPrincipal UserPrincipal user,
@@ -47,22 +47,22 @@ public class CommentController {
         ));
     }
 
-    /** 댓글 작성 */
+    // 2. 댓글 작성 POST /api/comments/{articleId}
     @PostMapping("/{articleId}")
     public ResponseEntity<CommentDto> create(
             @AuthenticationPrincipal UserPrincipal user,
             @PathVariable("articleId") Long articleId,
             @Validated @RequestBody CreateCommentRequest req
     ) {
-        CommentDto dto = commentService.createComment(
-                articleId,
-                user.getUserId(),
-                req
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        CommentDto created = commentService.createComment(articleId, user.getUserId(), req);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(created);
     }
 
-    /** 댓글 삭제 */
+
+
+    // 3. 댓글 삭제 DELETE /api/comments/{articleId}/{commentId}
     @DeleteMapping("/{articleId}/{commentId}")
     public ResponseEntity<Map<String,String>> delete(
             @AuthenticationPrincipal UserPrincipal user,
