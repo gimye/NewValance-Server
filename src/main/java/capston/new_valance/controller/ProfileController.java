@@ -6,13 +6,11 @@ import capston.new_valance.dto.res.ProfileResponse;
 import capston.new_valance.jwt.UserPrincipal;
 import capston.new_valance.service.ProfileService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,6 +18,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/profile")
+@Slf4j
 public class ProfileController {
 
     private final ProfileService profileService;
@@ -34,37 +33,19 @@ public class ProfileController {
     }
 
     // 2. 프로필 수정 PATCH /api/profile
-    @PatchMapping(
+    @PostMapping(
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<ProfileResponse> updateProfile(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(value = "username", required = false) String username,
-            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+            @ModelAttribute ProfilePatchRequest req
     ) {
-        // 1) 파일 타입 검증
-        if (profileImage != null &&
-                !profileImage.isEmpty() &&
-                !profileImage.getContentType().startsWith("image/")
-        ) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "이미지 파일만 업로드 가능합니다."
-            );
-        }
 
-        // 2) 빌더로 DTO 빌드
-        ProfilePatchRequest req = ProfilePatchRequest.builder()
-                .username(username)
-                .profileImage(profileImage)
-                .build();
-
-        // 3) 서비스 호출
         ProfileResponse updated = profileService.updateProfile(principal.getUserId(), req);
+
         return ResponseEntity.ok(updated);
     }
-
 
     // 3. 주간 조회 GET /api/profile/week
     @GetMapping("/week")

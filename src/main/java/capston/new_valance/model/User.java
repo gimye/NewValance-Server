@@ -45,10 +45,17 @@ public class User {
     @Column(nullable = false, name = "login_provider")
     private LoginProvider loginProvider;
 
-    public static User.UserBuilder builder(String email, LoginProvider loginProvider) {
-        return new User.UserBuilder()
+    public static UserBuilder builder(String email, LoginProvider loginProvider) {
+        return new UserBuilder()
                 .email(email)
                 .loginProvider(loginProvider);
     }
 
+    public void changeUsername(String newUsername) {
+        this.username = newUsername;
+    }
+
+    public void changeProfilePicture(String newUrl) {
+        this.profilePictureUrl = newUrl;
+    }
 }

@@ -1,9 +1,9 @@
-/* ============================================================= */
 package capston.new_valance.util;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,19 +12,19 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class S3Uploader {
 
     private final AmazonS3 amazonS3;
-    private final String bucket = "newvalance";  // yml에 넣고 @Value로 받아도 됨
+    private final String bucket = "newvalance";
 
-    /** 파일 업로드 후 공개 URL 반환 */
     public String upload(MultipartFile file, String dir) throws IOException {
 
-        String originalFilename = file.getOriginalFilename();
-        String ext = originalFilename != null
-                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+        String ext = (file.getOriginalFilename() != null
+                && file.getOriginalFilename().contains("."))
+                ? file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.'))
                 : "";
-        String key = "%s/%s%s".formatted(dir, UUID.randomUUID(), ext);
+        String key = String.format("%s/%s%s", dir, UUID.randomUUID(), ext);
 
         ObjectMetadata meta = new ObjectMetadata();
         meta.setContentType(file.getContentType());
@@ -32,7 +32,7 @@ public class S3Uploader {
 
         amazonS3.putObject(bucket, key, file.getInputStream(), meta);
 
-        // public-read 권한 버킷이면 바로 접근 가능
-        return amazonS3.getUrl(bucket, key).toString();
+        String url = amazonS3.getUrl(bucket, key).toString();
+        return url;
     }
 }
