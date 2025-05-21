@@ -27,7 +27,7 @@ public class SearchController {
     }
 
 
-    // 2. 재생: 전체 영상 버전별 S3 URL + 좋아요 여부 반환 GET /api/search/play/{articleId}
+    // 2. 재생: 전체 영상 버전별 S3 URL + 좋아요 여부 반환 GET /api/search/{articleId}
     @GetMapping(
             path = "/{articleId}",
             produces = MediaType.APPLICATION_JSON_VALUE
